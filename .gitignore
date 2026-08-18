@@ -1,0 +1,28 @@
+# Dependências
+node_modules/
+*/node_modules/
+
+# Variáveis de ambiente (NÃO SUBIR SENHAS!)
+.env
+.env.local
+.env.*.local
+*/.env
+
+# Build
+client/build/
+client/dist/
+dist/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Banco
+*.db
