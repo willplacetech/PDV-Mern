@@ -1,20 +1,23 @@
 {
-  "name": "pdv-mern",
+  "name": "pdv-server",
   "version": "1.0.0",
-  "description": "Sistema PDV Mercado - Stack MERN",
-  "main": "server/server.js",
+  "description": "Backend PDV - Express/MongoDB",
+  "main": "server.js",
   "scripts": {
-    "start": "node server/server.js",
-    "server": "nodemon server/server.js",
-    "client": "npm start --prefix client",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "install-all": "npm install && cd server && npm install && cd ../client && npm install"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
-  "keywords": ["pdv", "mern", "mercado", "vendas"],
-  "author": "Seu Nome",
-  "license": "MIT",
-  "devDependencies": {
-    "concurrently": "^8.2.2",
-    "nodemon": "^3.0.3"
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^2.4.3",
+    "colors": "^1.4.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.2",
+    "express-validator": "^7.3.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.5.0",
+    "mongoose": "^8.24.3",
+    "morgan": "^1.11.0"
   }
 }
