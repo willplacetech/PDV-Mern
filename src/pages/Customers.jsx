@@ -1,0 +1,276 @@
+import { useState, useEffect } from 'react';
+import api from '../services/api.jsx';
+import { useToast } from '../components/Toast.jsx';
+
+
+// 🎯 Máscaras
+const aplicarMascaraTelefone = (valor) => {
+  if (!valor) return '';
+  const apenasNumeros = valor.replace(/\D/g, '');
+  if (apenasNumeros.length <= 2) return apenasNumeros.replace(/^(\d{0,2})/, '($1');
+  if (apenasNumeros.length <= 7) return apenasNumeros.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+  return apenasNumeros.replace(/^(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+};
+
+const aplicarMascaraCPF = (valor) => {
+  if (!valor) return '';
+  const apenasNumeros = valor.replace(/\D/g, '');
+  if (apenasNumeros.length <= 3) return apenasNumeros;
+  if (apenasNumeros.length <= 6) return apenasNumeros.replace(/^(\d{3})(\d{0,3})/, '$1.$2');
+  if (apenasNumeros.length <= 9) return apenasNumeros.replace(/^(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+  return apenasNumeros.replace(/^(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
+};
+
+
+export default function Customers() {
+  const [clientes, setClientes] = useState([]);
+  const [form, setForm] = useState({ nome: '', telefone: '', endereco: '', cpf: '' });
+  const [editing, setEditing] = useState(null);
+  const { showToast } = useToast();
+
+
+  useEffect(() => { carregar(); }, []);
+  const carregar = async () => {
+    const res = await api.get('/customers');
+    setClientes(res.data);
+  };
+
+  // 🔒 Verifica duplicidade de CPF
+  const cpfJaExiste = (cpf, idEdicao = null) => {
+    const cpfLimpo = String(cpf).replace(/\D/g, '');
+    return clientes.some(c => 
+      String(c.cpf || '').replace(/\D/g, '') === cpfLimpo && c._id !== idEdicao
+    );
+  };
+
+
+  const submit = async (e) => {
+    e.preventDefault();
+    
+    const telefoneLimpo = form.telefone.replace(/\D/g, '');
+    const cpfLimpo = form.cpf.replace(/\D/g, '');
+
+    // ✅ Validações obrigatórias
+    if (!form.nome.trim()) {
+      return showToast('⚠️ Nome é obrigatório!', 'warning');
+    }
+    if (telefoneLimpo.length !== 11) {
+      return showToast('⚠️ Telefone inválido! Digite com DDD e 9 dígitos', 'warning');
+    }
+    if (cpfLimpo.length !== 11) {
+      return showToast('⚠️ CPF inválido! Digite os 11 números', 'warning');
+    }
+
+    // 🔒 Verifica duplicidade de CPF
+    if (cpfJaExiste(cpfLimpo, editing?._id)) {
+      return showToast('⚠️ Este CPF já está cadastrado!', 'warning');
+    }
+
+    const dadosParaEnviar = {
+      nome: form.nome.trim(),
+      telefone: telefoneLimpo,
+      cpf: cpfLimpo,
+      endereco: form.endereco?.trim() || ''
+    };
+
+    try {
+      editing 
+        ? await api.put(`/customers/${editing._id}`, dadosParaEnviar) 
+        : await api.post('/customers', dadosParaEnviar);
+      
+      showToast(editing ? '✅ Cliente atualizado!' : '✅ Cliente cadastrado!', 'success');
+      setForm({ nome: '', telefone: '', endereco: '', cpf: '' });
+      setEditing(null);
+      carregar();
+    } catch (err) {
+      showToast('❌ Erro ao salvar', 'error');
+    }
+  };
+
+
+  const alterar = (c) => {
+    setEditing(c);
+    setForm({ 
+      nome: c.nome, 
+      telefone: aplicarMascaraTelefone(c.telefone || ''), 
+      endereco: c.endereco || '', 
+      cpf: aplicarMascaraCPF(c.cpf || '') 
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+
+  const remover = async (id) => {
+    if (!window.confirm('Excluir este cliente?')) return;
+    await api.delete(`/customers/${id}`);
+    showToast('Cliente removido', 'warning');
+    carregar();
+  };
+
+
+  const handleTelefoneChange = (e) => {
+    const valor = e.target.value.replace(/\D/g, '').slice(0, 11);
+    setForm({ ...form, telefone: aplicarMascaraTelefone(valor) });
+  };
+
+  const handleCpfChange = (e) => {
+    const valor = e.target.value.replace(/\D/g, '').slice(0, 11);
+    setForm({ ...form, cpf: aplicarMascaraCPF(valor) });
+  };
+
+
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: '#0f172a' }}>👤 Cadastro de Clientes</h1>
+        <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>Gerencie sua base de clientes</p>
+      </div>
+
+
+      <div style={{
+        background: '#fff', border: '1px solid rgba(15,23,42,.08)',
+        borderRadius: 16, padding: 16, marginBottom: 16
+      }}>
+        <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 14px', color: '#0f172a' }}>
+          {editing ? '✏️ Editar Cliente' : '➕ Novo Cliente'}
+        </h3>
+        <form onSubmit={submit}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }} className="form-grid-cli">
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 5, display: 'block' }}>
+                Nome * <span style={{ color: '#dc2626', fontSize: 10 }}>(obrigatório)</span>
+              </label>
+              <input 
+                placeholder="Nome completo" 
+                value={form.nome} 
+                required
+                onChange={e => setForm({ ...form, nome: e.target.value })}
+                style={inputStyle} 
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 5, display: 'block' }}>
+                Telefone * <span style={{ color: '#dc2626', fontSize: 10 }}>(obrigatório)</span>
+              </label>
+              <input 
+                placeholder="(11) 99999-9999" 
+                value={form.telefone}
+                onChange={handleTelefoneChange}
+                style={inputStyle} 
+                required
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 5, display: 'block' }}>
+                CPF * <span style={{ color: '#dc2626', fontSize: 10 }}>(obrigatório/único)</span>
+              </label>
+              <input 
+                placeholder="000.000.000-00" 
+                value={form.cpf}
+                onChange={handleCpfChange}
+                style={inputStyle} 
+                required
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 5, display: 'block' }}>
+                Endereço
+              </label>
+              <input 
+                placeholder="Rua, número, bairro (opcional)" 
+                value={form.endereco}
+                onChange={e => setForm({ ...form, endereco: e.target.value })}
+                style={inputStyle} 
+              />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+            <button type="submit" style={{
+              flex: 1, padding: '12px', background: '#ea580c', color: '#fff',
+              border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
+              cursor: 'pointer', minHeight: 46
+            }}>{editing ? 'Atualizar' : 'Cadastrar'}</button>
+            {editing && <button type="button" onClick={() => { 
+              setEditing(null); 
+              setForm({ nome: '', telefone: '', endereco: '', cpf: '' }); 
+            }} style={{
+              padding: '12px 20px', background: '#fff', color: '#64748b',
+              border: '1.5px solid rgba(15,23,42,.1)', borderRadius: 10,
+              fontSize: 14, fontWeight: 600, cursor: 'pointer', minHeight: 46
+            }}>Cancelar</button>}
+          </div>
+        </form>
+      </div>
+
+
+      <div style={{
+        background: '#fff', border: '1px solid rgba(15,23,42,.08)',
+        borderRadius: 16, padding: 16
+      }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          Cadastrados
+          <span style={{ background: 'rgba(22,163,74,.12)', color: '#16a34a', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+            {clientes.length}
+          </span>
+        </h3>
+        <div style={{ overflowX: 'auto', margin: '0 -16px', padding: '0 16px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(15,23,42,.08)' }}>
+                {['Nome', 'Telefone', 'CPF', 'Endereço', 'Ações'].map(h => (
+                  <th key={h} style={{ padding: '10px 8px', textAlign: 'left', fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {clientes.length === 0 ? (
+                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 24, color: '#64748b', fontSize: 13 }}>Nenhum cliente cadastrado</td></tr>
+              ) : clientes.map(c => (
+                <tr key={c._id} style={{ borderBottom: '1px solid rgba(15,23,42,.06)' }}>
+                  <td style={{ padding: '10px 8px', fontWeight: 600, fontSize: 13 }}>{c.nome}</td>
+                  <td style={{ padding: '10px 8px', fontSize: 13, fontFamily: 'monospace' }}>
+                    {aplicarMascaraTelefone(c.telefone) || '-'}
+                  </td>
+                  <td style={{ padding: '10px 8px', fontSize: 13, fontFamily: 'monospace' }}>
+                    {aplicarMascaraCPF(c.cpf) || '-'}
+                  </td>
+                  <td style={{ padding: '10px 8px', fontSize: 13, color: '#64748b', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {c.endereco || '-'}
+                  </td>
+                  <td style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <button onClick={() => alterar(c)} style={btnTable}>Editar</button>
+                    <button onClick={() => remover(c._id)} style={{ ...btnTable, background: 'rgba(220,38,38,.1)', color: '#dc2626', borderColor: 'rgba(220,38,38,.2)' }}>Excluir</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+
+      <style>{`
+        @media (min-width: 640px) {
+          .form-grid-cli { grid-template-columns: 1fr 1fr !important; }
+        }
+        @media (min-width: 1024px) {
+          .form-grid-cli { grid-template-columns: 2fr 1fr 1fr 2fr !important; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+
+const inputStyle = {
+  width: '100%', padding: '12px 14px', border: '1.5px solid rgba(15,23,42,.1)',
+  borderRadius: 10, fontSize: 16, boxSizing: 'border-box',
+  outline: 'none', background: '#fff', color: '#0f172a', minHeight: 48
+};
+
+
+const btnTable = {
+  padding: '6px 12px', margin: '0 3px', background: '#fff', color: '#0f172a',
+  border: '1px solid rgba(15,23,42,.1)', borderRadius: 8, fontSize: 12,
+  fontWeight: 600, cursor: 'pointer', minHeight: 34
+};
