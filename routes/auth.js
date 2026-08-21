@@ -90,7 +90,9 @@ router.get('/me', auth, async (req, res) => {
 });
 
 router.post('/logout', (req, res) => {
-  res.clearCookie('pdv_token', cookieOptions);
+  const clearCookieOptions = { ...cookieOptions };
+  delete clearCookieOptions.maxAge;
+  res.clearCookie('pdv_token', clearCookieOptions);
   res.status(204).end();
 });
 

@@ -5,7 +5,7 @@ const itemSchema = new mongoose.Schema({
   codigo: String,
   nome: String,
   precoUnitario: { type: Number, required: true },
-  quantidade: { type: Number, required: true, min: 1 }
+  quantidade: { type: Number, required: true, min: 1, validate: Number.isInteger }
 });
 
 const pagamentoSchema = new mongoose.Schema({
@@ -23,9 +23,9 @@ const pagamentoSchema = new mongoose.Schema({
 const orderSchema = new mongoose.Schema({
   numero: { type: String, unique: true },
   itens: [itemSchema],
-  subtotal: { type: Number, required: true },
-  desconto: { type: Number, default: 0 },
-  total: { type: Number, required: true },
+  subtotal: { type: Number, required: true, min: 0 },
+  desconto: { type: Number, default: 0, min: 0 },
+  total: { type: Number, required: true, min: 0 },
   
   clienteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer' },
   clienteNome: String,
