@@ -89,16 +89,14 @@ export default function PDV() {
   const finalizar = async () => {
     if (!carrinho.length) return showToast('Carrinho vazio!', 'warning');
 
-    // ✅ NOVO: Verifica se cliente foi selecionado
-    if (!clienteId) {
-      showToast('⚠️ Selecione um cliente antes de finalizar!', 'warning');
-      selectClienteRef.current?.focus(); // ✅ Abre/foca na caixa de seleção
-      return;
+    const descontoNumerico = Number(desconto) || 0;
+    if (descontoNumerico < 0 || descontoNumerico > subtotal) {
+      return showToast('O desconto não pode ser maior que o subtotal.', 'warning');
     }
 
     try {
       const res = await api.post('/orders', {
-        itens: carrinho, subtotal, desconto: parseFloat(desconto) || 0, total,
+        itens: carrinho, subtotal, desconto: descontoNumerico, total,
         clienteId, clienteNome: clienteSelecionado?.nome || 'Cliente não identificado',
         clienteTelefone: clienteSelecionado?.telefone || ''
       });

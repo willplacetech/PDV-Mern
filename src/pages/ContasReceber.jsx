@@ -602,8 +602,8 @@ Obrigado! 🙏`
                 borderRadius: 14, padding: 16,
                 transition: 'all 0.15s'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: '1 1 220px' }}>
                     <input 
                       type="checkbox" 
                       checked={estaSelecionado}
@@ -611,7 +611,7 @@ Obrigado! 🙏`
                       style={{ width: 18, height: 18, cursor: 'pointer' }}
                     />
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 15 }}>#{pedido.numero} — {pedido.clienteNome}</div>
+                      <div style={{ fontWeight: 700, fontSize: 15, overflowWrap: 'anywhere' }}>#{pedido.numero} — {pedido.clienteNome}</div>
                       <div style={{ fontSize: 12, color: '#64748b' }}>
                         {new Date(pedido.createdAt).toLocaleString('pt-BR')} • Atendente: {pedido.atendente}
                       </div>
@@ -661,7 +661,7 @@ Obrigado! 🙏`
                 )}
 
                 {/* ✅ Botões individuais: Imprimir • WhatsApp • Receber • Quitar */}
-                <div style={{ 
+                <div className="order-actions" style={{
                   display: 'grid', 
                   gridTemplateColumns: 'repeat(4, 1fr)',
                   gap: 10
@@ -844,12 +844,12 @@ Obrigado! 🙏`
 
       <style>{`
         @media (max-width: 900px) {
-          div[style*="gridTemplateColumns: repeat(4, 1fr)"] {
+          .order-actions {
             grid-template-columns: repeat(2, 1fr) !important;
           }
         }
         @media (max-width: 480px) {
-          div[style*="gridTemplateColumns: repeat(4, 1fr)"] {
+          .order-actions {
             grid-template-columns: 1fr !important;
           }
         }

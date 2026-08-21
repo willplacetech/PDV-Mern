@@ -95,6 +95,7 @@ export default function Orders() {
         {[
           { valor: 'todos', label: '📋 Todos' },
           { valor: 'pendente', label: '⏳ Pendentes' },
+          { valor: 'parcial', label: '💰 Parciais' },
           { valor: 'pago', label: '✅ Pagos' },
           { valor: 'cancelado', label: '❌ Cancelados' }
         ].map(item => (
