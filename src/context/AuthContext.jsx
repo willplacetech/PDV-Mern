@@ -7,29 +7,31 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { loadUser(); }, []);
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const res = await api.get('/auth/me');
+        setUser(res.data);
+      } catch (error) {
+        if (error.response?.status !== 401) {
+          console.error('Erro ao restaurar sessão:', error);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const loadUser = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return setLoading(false);
-    try {
-      const res = await api.get('/auth/me');
-      setUser(res.data);
-    } catch {
-      localStorage.removeItem('token');
-    }
-    setLoading(false);
-  };
+    loadUser();
+  }, []);
 
   const login = async (username, password) => {
     const res = await api.post('/auth/login', { username, password });
-    localStorage.setItem('token', res.data.token);
     setUser(res.data.user);
     return res.data;
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
+  const logout = async () => {
+    await api.post('/auth/logout');
     setUser(null);
   };
 
