@@ -1,8 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = function (req, res, next) {
-  // Pegar token do header
-  const token = req.header('x-auth-token');
+  const token = req.cookies?.pdv_token;
 
   // Verificar se existe token
   if (!token) {
