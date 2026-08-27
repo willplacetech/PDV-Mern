@@ -7,13 +7,7 @@ const api = axios.create({
 
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
-    const isAuthCheck = err.config?.url?.endsWith('/auth/me');
-    if (err.response?.status === 401 && !isAuthCheck) {
-      window.location.href = '/login';
-    }
-    return Promise.reject(err);
-  }
+  (err) => Promise.reject(err)
 );
 
 export default api;
