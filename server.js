@@ -6,10 +6,6 @@ const rateLimit = require('express-rate-limit');
 const colors = require('colors');
 const connectDB = require('./db');
 
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  throw new Error('JWT_SECRET deve ter pelo menos 32 caracteres');
-}
-
 // Conectar ao banco para os dados do PDV; o login mockado não consulta usuários.
 connectDB();
 

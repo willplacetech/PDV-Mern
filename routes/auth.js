@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
 
 const cookieOptions = {
   httpOnly: true,
@@ -21,10 +20,6 @@ router.post('/login', (req, res) => {
   }
 
   const user = { id: 'mock-admin', username: 'admin', role: 'admin' };
-  const token = jwt.sign({ user }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '24h',
-  });
-  res.cookie('pdv_token', token, cookieOptions);
   res.json({ user });
 });
 
