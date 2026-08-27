@@ -10,16 +10,21 @@ const connectDB = require('./db');
 connectDB();
 
 const app = express();
-const allowedOrigins = (process.env.FRONTEND_URL || '')
+const allowedOrigins = (process.env.FRONTEND_URL || 'https://pdv-mern-1.onrender.com')
   .split(',')
-  .map((origin) => origin.trim())
+  .map((origin) => origin.trim().replace(/\/$/, ''))
   .filter(Boolean);
 
 // Middlewares
 app.disable('x-powered-by');
 app.use(helmet());
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (requestOrigin, callback) => {
+    if (!requestOrigin || allowedOrigins.includes(requestOrigin.replace(/\/$/, ''))) {
+      return callback(null, true);
+    }
+    return callback(new Error('Origem não autorizada pelo CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type'],
