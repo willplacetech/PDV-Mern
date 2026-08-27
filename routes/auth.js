@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
-const auth = require('../middleware/auth');
 
 const cookieOptions = {
   httpOnly: true,
@@ -54,39 +53,11 @@ router.post(
   }
 );
 
-// @route   POST api/auth/verify-password
-// @desc    Verificar senha do usuário logado (para confirmações sensíveis)
-// @access  Privado
-router.post(
-  '/verify-password',
-  [auth, body('password', 'Senha é obrigatória').exists()],
-  async (req, res) => {
-    try {
-      const user = await User.findById(req.user.id).select('+password');
-      const isMatch = await user.matchPassword(req.body.password);
-      
-      res.json({ valid: isMatch });
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send('Erro no servidor');
-    }
-  }
-);
-
 // @route   GET api/auth/me
-// @desc    Pegar dados do usuário logado
-// @access  Privado
-router.get('/me', auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(401).json({ msg: 'Usuário não encontrado' });
-    }
-    res.json({ id: user.id, username: user.username, role: user.role });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Erro no servidor');
-  }
+// @desc    Informar o operador da sessão pública
+// @access  Público durante a fase sem login
+router.get('/me', (req, res) => {
+  res.json({ username: 'operador', role: 'admin' });
 });
 
 router.post('/logout', (req, res) => {
@@ -97,23 +68,16 @@ router.post('/logout', (req, res) => {
 });
 
 // @route   POST api/auth/register
-// @desc    Registrar novo usuário (apenas admin)
-// @access  Privado - Admin
+// @desc    Registrar novo usuário
+// @access  Público durante a fase sem login
 router.post(
   '/register',
   [
-    auth,
     body('username', 'Usuário é obrigatório').not().isEmpty(),
     body('password', 'Senha deve ter pelo menos 4 caracteres').isLength({ min: 4 }),
   ],
   async (req, res) => {
     try {
-      // Verificar se é admin
-      const currentUser = await User.findById(req.user.id);
-      if (currentUser.role !== 'admin') {
-        return res.status(403).json({ msg: 'Apenas administradores podem criar usuários' });
-      }
-
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });

@@ -9,9 +9,10 @@ node_modules/
 */.env
 
 # Build
-client/build/
-client/dist/
 dist/
+build/
+*/dist/
+*/build/
 
 # Logs
 logs/
@@ -24,5 +25,8 @@ npm-debug.log*
 *.swp
 .DS_Store
 
-# Banco
+# Banco e arquivos locais
 *.db
+*.sqlite
+*.sqlite3
+coverage/
