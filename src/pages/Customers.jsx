@@ -122,23 +122,23 @@ export default function Customers() {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: '#0f172a' }}>👤 Cadastro de Clientes</h1>
-        <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>Gerencie sua base de clientes</p>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text-primary)' }}>👤 Cadastro de Clientes</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Gerencie sua base de clientes</p>
       </div>
 
 
       <div style={{
-        background: '#fff', border: '1px solid rgba(15,23,42,.08)',
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
         borderRadius: 16, padding: 16, marginBottom: 16
       }}>
-        <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 14px', color: '#0f172a' }}>
+        <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 14px', color: 'var(--text-primary)' }}>
           {editing ? '✏️ Editar Cliente' : '➕ Novo Cliente'}
         </h3>
         <form onSubmit={submit}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }} className="form-grid-cli">
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 5, display: 'block' }}>
-                Nome * <span style={{ color: '#dc2626', fontSize: 10 }}>(obrigatório)</span>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>
+                Nome * <span style={{ color: 'var(--error-bg)', fontSize: 10 }}>(obrigatório)</span>
               </label>
               <input 
                 placeholder="Nome completo" 
@@ -149,8 +149,8 @@ export default function Customers() {
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 5, display: 'block' }}>
-                Telefone * <span style={{ color: '#dc2626', fontSize: 10 }}>(obrigatório)</span>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>
+                Telefone * <span style={{ color: 'var(--error-bg)', fontSize: 10 }}>(obrigatório)</span>
               </label>
               <input 
                 placeholder="(11) 99999-9999" 
@@ -161,8 +161,8 @@ export default function Customers() {
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 5, display: 'block' }}>
-                CPF * <span style={{ color: '#dc2626', fontSize: 10 }}>(obrigatório/único)</span>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>
+                CPF * <span style={{ color: 'var(--error-bg)', fontSize: 10 }}>(obrigatório/único)</span>
               </label>
               <input 
                 placeholder="000.000.000-00" 
@@ -173,7 +173,7 @@ export default function Customers() {
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 5, display: 'block' }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>
                 Endereço
               </label>
               <input 
@@ -186,7 +186,7 @@ export default function Customers() {
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
             <button type="submit" style={{
-              flex: 1, padding: '12px', background: '#ea580c', color: '#fff',
+              flex: 1, padding: '12px', background: 'var(--accent-primary)', color: '#fff',
               border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
               cursor: 'pointer', minHeight: 46
             }}>{editing ? 'Atualizar' : 'Cadastrar'}</button>
@@ -194,8 +194,8 @@ export default function Customers() {
               setEditing(null); 
               setForm({ nome: '', telefone: '', endereco: '', cpf: '' }); 
             }} style={{
-              padding: '12px 20px', background: '#fff', color: '#64748b',
-              border: '1.5px solid rgba(15,23,42,.1)', borderRadius: 10,
+              padding: '12px 20px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)',
+              border: '1.5px solid var(--border-color)', borderRadius: 10,
               fontSize: 14, fontWeight: 600, cursor: 'pointer', minHeight: 46
             }}>Cancelar</button>}
           </div>
@@ -204,29 +204,29 @@ export default function Customers() {
 
 
       <div style={{
-        background: '#fff', border: '1px solid rgba(15,23,42,.08)',
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
         borderRadius: 16, padding: 16
       }}>
         <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
           Cadastrados
-          <span style={{ background: 'rgba(22,163,74,.12)', color: '#16a34a', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+          <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success-bg)', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
             {clientes.length}
           </span>
         </h3>
         <div style={{ overflowX: 'auto', margin: '0 -16px', padding: '0 16px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(15,23,42,.08)' }}>
+              <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                 {['Nome', 'Telefone', 'CPF', 'Endereço', 'Ações'].map(h => (
-                  <th key={h} style={{ padding: '10px 8px', textAlign: 'left', fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 8px', textAlign: 'left', fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {clientes.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 24, color: '#64748b', fontSize: 13 }}>Nenhum cliente cadastrado</td></tr>
+                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 24, color: 'var(--text-secondary)', fontSize: 13 }}>Nenhum cliente cadastrado</td></tr>
               ) : clientes.map(c => (
-                <tr key={c._id} style={{ borderBottom: '1px solid rgba(15,23,42,.06)' }}>
+                <tr key={c._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                   <td style={{ padding: '10px 8px', fontWeight: 600, fontSize: 13 }}>{c.nome}</td>
                   <td style={{ padding: '10px 8px', fontSize: 13, fontFamily: 'monospace' }}>
                     {aplicarMascaraTelefone(c.telefone) || '-'}
@@ -234,12 +234,12 @@ export default function Customers() {
                   <td style={{ padding: '10px 8px', fontSize: 13, fontFamily: 'monospace' }}>
                     {aplicarMascaraCPF(c.cpf) || '-'}
                   </td>
-                  <td style={{ padding: '10px 8px', fontSize: 13, color: '#64748b', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '10px 8px', fontSize: 13, color: 'var(--text-secondary)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {c.endereco || '-'}
                   </td>
                   <td style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button onClick={() => alterar(c)} style={btnTable}>Editar</button>
-                    <button onClick={() => remover(c._id)} style={{ ...btnTable, background: 'rgba(220,38,38,.1)', color: '#dc2626', borderColor: 'rgba(220,38,38,.2)' }}>Excluir</button>
+                    <button onClick={() => remover(c._id)} style={{ ...btnTable, background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error-bg)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>Excluir</button>
                   </td>
                 </tr>
               ))}
@@ -263,14 +263,14 @@ export default function Customers() {
 
 
 const inputStyle = {
-  width: '100%', padding: '12px 14px', border: '1.5px solid rgba(15,23,42,.1)',
+  width: '100%', padding: '12px 14px', border: '1.5px solid var(--border-color)',
   borderRadius: 10, fontSize: 16, boxSizing: 'border-box',
-  outline: 'none', background: '#fff', color: '#0f172a', minHeight: 48
+  outline: 'none', background: 'var(--input-bg)', color: 'var(--input-text)', minHeight: 48
 };
 
 
 const btnTable = {
-  padding: '6px 12px', margin: '0 3px', background: '#fff', color: '#0f172a',
-  border: '1px solid rgba(15,23,42,.1)', borderRadius: 8, fontSize: 12,
+  padding: '6px 12px', margin: '0 3px', background: 'var(--bg-secondary)', color: 'var(--text-primary)',
+  border: '1px solid var(--border-color)', borderRadius: 8, fontSize: 12,
   fontWeight: 600, cursor: 'pointer', minHeight: 34
 };

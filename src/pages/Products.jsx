@@ -98,23 +98,23 @@ export default function Products() {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: '#0f172a' }}>📦 Cadastro de Produtos</h1>
-        <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>Gerencie seu catálogo de produtos</p>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text-primary)' }}>📦 Cadastro de Produtos</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Gerencie seu catálogo de produtos</p>
       </div>
 
 
       <div style={{
-        background: '#fff', border: '1px solid rgba(15,23,42,.08)',
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
         borderRadius: 16, padding: 16, marginBottom: 16
       }}>
-        <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 14px', color: '#0f172a' }}>
+        <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 14px', color: 'var(--text-primary)' }}>
           {editing ? '✏️ Editar Produto' : '➕ Novo Produto'}
         </h3>
         <form onSubmit={submit}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }} className="form-grid-prod">
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 5, display: 'block' }}>
-                Código {!editing && <span style={{ color: '#16a34a', fontSize: 11 }}>(automático)</span>}
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>
+                Código {!editing && <span style={{ color: 'var(--success-bg)', fontSize: 11 }}>(automático)</span>}
               </label>
               <input 
                 placeholder="Automático" 
@@ -123,31 +123,31 @@ export default function Products() {
                 onChange={e => setForm({ ...form, codigo: e.target.value })}
                 style={{
                   ...inputStyle,
-                  background: !editing ? '#f1f5f9' : '#fff',
+                  background: !editing ? 'var(--bg-tertiary)' : 'var(--input-bg)',
                   cursor: !editing ? 'not-allowed' : 'text'
                 }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 5, display: 'block' }}>Nome *</label>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>Nome *</label>
               <input placeholder="Nome do produto" value={form.nome} required
                 onChange={e => setForm({ ...form, nome: e.target.value })}
                 style={inputStyle} />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 5, display: 'block' }}>Categoria</label>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>Categoria</label>
               <select value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })} style={inputStyle}>
                 {categorias.map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 5, display: 'block' }}>Preço (R$) *</label>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>Preço (R$) *</label>
               <input type="number" step="0.01" min={0} placeholder="0.00" value={form.preco} required
                 onChange={e => setForm({ ...form, preco: e.target.value })}
                 style={inputStyle} />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 5, display: 'block' }}>Estoque</label>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>Estoque</label>
               <input type="number" min={0} placeholder="0" value={form.estoque}
                 onChange={e => setForm({ ...form, estoque: e.target.value })}
                 style={inputStyle} />
@@ -155,13 +155,13 @@ export default function Products() {
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
             <button type="submit" style={{
-              flex: 1, padding: '12px', background: '#ea580c', color: '#fff',
+              flex: 1, padding: '12px', background: 'var(--accent-primary)', color: '#fff',
               border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
               cursor: 'pointer', minHeight: 46
             }}>{editing ? 'Atualizar' : 'Cadastrar'}</button>
             {editing && <button type="button" onClick={cancelar} style={{
-              padding: '12px 20px', background: '#fff', color: '#64748b',
-              border: '1.5px solid rgba(15,23,42,.1)', borderRadius: 10,
+              padding: '12px 20px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)',
+              border: '1.5px solid var(--border-color)', borderRadius: 10,
               fontSize: 14, fontWeight: 600, cursor: 'pointer', minHeight: 46
             }}>Cancelar</button>}
           </div>
@@ -170,13 +170,13 @@ export default function Products() {
 
 
       <div style={{
-        background: '#fff', border: '1px solid rgba(15,23,42,.08)',
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
         borderRadius: 16, padding: 16
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
             Cadastrados
-            <span style={{ background: 'rgba(234,88,12,.14)', color: '#ea580c', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+            <span style={{ background: 'var(--accent-light)', color: 'var(--accent-primary)', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
               {filtrados.length}
             </span>
           </h3>
@@ -189,17 +189,17 @@ export default function Products() {
         <div style={{ overflowX: 'auto', margin: '0 -16px', padding: '0 16px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 500 }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(15,23,42,.08)' }}>
+              <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                 {['Código', 'Nome', 'Categoria', 'Preço', 'Estoque', 'Ações'].map(h => (
-                  <th key={h} style={{ padding: '10px 8px', textAlign: 'left', fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 8px', textAlign: 'left', fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtrados.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 24, color: '#64748b', fontSize: 13 }}>Nenhum produto cadastrado</td></tr>
+                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 24, color: 'var(--text-secondary)', fontSize: 13 }}>Nenhum produto cadastrado</td></tr>
               ) : filtrados.map(p => (
-                <tr key={p._id} style={{ borderBottom: '1px solid rgba(15,23,42,.06)' }}>
+                <tr key={p._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                   <td style={{ padding: '10px 8px', fontFamily: 'monospace', fontSize: 13 }}>{p.codigo}</td>
                   <td style={{ padding: '10px 8px', fontWeight: 600, fontSize: 13, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nome}</td>
                   <td style={{ padding: '10px 8px' }}>
@@ -209,11 +209,11 @@ export default function Products() {
                       padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600
                     }}>{p.categoria}</span>
                   </td>
-                  <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#ea580c', fontVariantNumeric: 'tabular-nums' }}>R$ {Number(p.preco).toFixed(2).replace('.', ',')}</td>
-                  <td style={{ padding: '10px 8px', textAlign: 'center', color: p.estoque <= 5 ? '#dc2626' : '#0f172a', fontWeight: p.estoque <= 5 ? 700 : 500 }}>{p.estoque}</td>
+                  <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: 'var(--accent-primary)', fontVariantNumeric: 'tabular-nums' }}>R$ {Number(p.preco).toFixed(2).replace('.', ',')}</td>
+                  <td style={{ padding: '10px 8px', textAlign: 'center', color: p.estoque <= 5 ? 'var(--error-bg)' : 'var(--text-primary)', fontWeight: p.estoque <= 5 ? 700 : 500 }}>{p.estoque}</td>
                   <td style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button onClick={() => alterar(p)} style={btnTable}>Editar</button>
-                    <button onClick={() => remover(p._id)} style={{ ...btnTable, background: 'rgba(220,38,38,.1)', color: '#dc2626', borderColor: 'rgba(220,38,38,.2)' }}>Excluir</button>
+                    <button onClick={() => remover(p._id)} style={{ ...btnTable, background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error-bg)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>Excluir</button>
                   </td>
                 </tr>
               ))}
@@ -248,14 +248,14 @@ const corCategoria = {
 
 
 const inputStyle = {
-  width: '100%', padding: '12px 14px', border: '1.5px solid rgba(15,23,42,.1)',
+  width: '100%', padding: '12px 14px', border: '1.5px solid var(--border-color)',
   borderRadius: 10, fontSize: 16, boxSizing: 'border-box',
-  outline: 'none', background: '#fff', color: '#0f172a', minHeight: 48
+  outline: 'none', background: 'var(--input-bg)', color: 'var(--input-text)', minHeight: 48
 };
 
 
 const btnTable = {
-  padding: '6px 12px', margin: '0 3px', background: '#fff', color: '#0f172a',
-  border: '1px solid rgba(15,23,42,.1)', borderRadius: 8, fontSize: 12,
+  padding: '6px 12px', margin: '0 3px', background: 'var(--bg-secondary)', color: 'var(--text-primary)',
+  border: '1px solid var(--border-color)', borderRadius: 8, fontSize: 12,
   fontWeight: 600, cursor: 'pointer', minHeight: 34
 };

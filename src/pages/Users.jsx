@@ -36,11 +36,11 @@ export default function Users() {
   return (
     <section style={{ maxWidth: 620, margin: '0 auto' }}>
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: 0, color: '#0f172a' }}>Novo usuário</h2>
-        <p style={{ color: '#64748b', margin: '8px 0 0' }}>Cadastre acessos para sua equipe.</p>
+        <h2 style={{ margin: 0, color: 'var(--text-primary)' }}>Novo usuário</h2>
+        <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0' }}>Cadastre acessos para sua equipe.</p>
       </div>
-      <form onSubmit={handleSubmit} style={{ background: '#fff', padding: 24, borderRadius: 14, boxShadow: '0 6px 24px rgba(15,23,42,.07)' }}>
-        <label style={{ display: 'block', marginBottom: 16, color: '#475569', fontWeight: 600 }}>
+      <form onSubmit={handleSubmit} style={{ background: 'var(--bg-secondary)', padding: 24, borderRadius: 14, boxShadow: 'var(--shadow-md)' }}>
+        <label style={{ display: 'block', marginBottom: 16, color: 'var(--text-secondary)', fontWeight: 600 }}>
           Usuário
           <input
             value={form.username}
@@ -51,7 +51,7 @@ export default function Users() {
             style={inputStyle}
           />
         </label>
-        <label style={{ display: 'block', marginBottom: 16, color: '#475569', fontWeight: 600 }}>
+        <label style={{ display: 'block', marginBottom: 16, color: 'var(--text-secondary)', fontWeight: 600 }}>
           Senha
           <input
             type="password"
@@ -63,14 +63,14 @@ export default function Users() {
             style={inputStyle}
           />
         </label>
-        <label style={{ display: 'block', marginBottom: 22, color: '#475569', fontWeight: 600 }}>
+        <label style={{ display: 'block', marginBottom: 22, color: 'var(--text-secondary)', fontWeight: 600 }}>
           Perfil
           <select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} style={inputStyle}>
             <option value="operador">Operador</option>
             <option value="admin">Administrador</option>
           </select>
         </label>
-        <button type="submit" disabled={loading} style={{ width: '100%', padding: 14, border: 0, borderRadius: 10, background: '#ea580c', color: '#fff', fontWeight: 700, fontSize: 15, cursor: loading ? 'wait' : 'pointer' }}>
+        <button type="submit" disabled={loading} style={{ width: '100%', padding: 14, border: 0, borderRadius: 10, background: 'var(--accent-primary)', color: '#fff', fontWeight: 700, fontSize: 15, cursor: loading ? 'wait' : 'pointer' }}>
           {loading ? 'Criando...' : 'Criar usuário'}
         </button>
       </form>
@@ -80,6 +80,6 @@ export default function Users() {
 
 const inputStyle = {
   display: 'block', width: '100%', marginTop: 7, padding: '12px 14px',
-  border: '1px solid rgba(15,23,42,.15)', borderRadius: 9, fontSize: 16,
-  boxSizing: 'border-box', background: '#fff', color: '#0f172a',
+  border: '1px solid var(--border-color)', borderRadius: 9, fontSize: 16,
+  boxSizing: 'border-box', background: 'var(--input-bg)', color: 'var(--input-text)',
 };

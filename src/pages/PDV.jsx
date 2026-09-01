@@ -252,39 +252,39 @@ Obrigado pela preferência! 🙏`
     <div>
       {/* Cabeçalho PDV */}
       <div className="pdv-header-desktop" style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: '#0f172a' }}>🛒 Ponto de Venda</h1>
-        <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>Selecione os produtos para iniciar a venda</p>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text-primary)' }}>🛒 Ponto de Venda</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Selecione os produtos para iniciar a venda</p>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }} className="pdv-grid">
         {/* COLUNA PRODUTOS */}
         <div>
           <div style={{
-            background: '#fff', border: '1px solid rgba(15,23,42,.08)',
+            background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
             borderRadius: 16, padding: 16, marginBottom: 16
           }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }} className="busca-grid">
               <div>
-                <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6, display: 'block' }}>Buscar produto</label>
+                <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 6, display: 'block' }}>Buscar produto</label>
                 <input
                   placeholder="Código, nome ou categoria..." value={busca}
                   onChange={e => setBusca(e.target.value)}
                   style={{
-                    width: '100%', padding: '12px 14px', border: '1.5px solid rgba(15,23,42,.1)',
+                    width: '100%', padding: '12px 14px', border: '1.5px solid var(--border-color)',
                     borderRadius: 10, fontSize: 16, boxSizing: 'border-box',
-                    outline: 'none', background: '#fff', color: '#0f172a', minHeight: 48
+                    outline: 'none', background: 'var(--input-bg)', color: 'var(--input-text)', minHeight: 48
                   }}
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6, display: 'block' }}>Cliente</label>
+                <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 6, display: 'block' }}>Cliente</label>
                 <select
                   ref={selectClienteRef} // ✅ Liga a referência
                   value={clienteId}
                   onChange={e => setClienteId(e.target.value)}
                   style={{
-                    width: '100%', padding: '12px 14px', border: '1.5px solid rgba(15,23,42,.1)',
+                    width: '100%', padding: '12px 14px', border: '1.5px solid var(--border-color)',
                     borderRadius: 10, fontSize: 16, boxSizing: 'border-box',
-                    outline: 'none', background: '#fff', color: '#0f172a', minHeight: 48
+                    outline: 'none', background: 'var(--input-bg)', color: 'var(--input-text)', minHeight: 48
                   }}>
                   <option value="">Cliente não identificado</option>
                   {clientes.map(c => <option key={c._id} value={c._id}>{c.nome}</option>)}
@@ -293,18 +293,18 @@ Obrigado pela preferência! 🙏`
             </div>
           </div>
           <div style={{
-            background: '#fff', border: '1px solid rgba(15,23,42,.08)',
+            background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
             borderRadius: 16, padding: 16
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: '#0f172a' }}>Produtos</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Produtos</h3>
               <span style={{
-                background: 'rgba(234,88,12,.14)', color: '#ea580c',
+                background: 'var(--accent-light)', color: 'var(--accent-primary)',
                 padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600
               }}>{filtrados.length}</span>
             </div>
             {filtrados.length === 0 ? (
-              <p style={{ textAlign: 'center', color: '#64748b', padding: '40px 20px', fontSize: 14 }}>Nenhum produto encontrado</p>
+              <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px 20px', fontSize: 14 }}>Nenhum produto encontrado</p>
             ) : (
               <div style={{
                 display: 'grid', gap: 10,
@@ -317,7 +317,7 @@ Obrigado pela preferência! 🙏`
                   const estoqueBaixo = p.estoque > 0 && p.estoque <= 5;
                   return (
                     <div key={p._id} onClick={() => adicionarItem(p)} style={{
-                      background: '#fff', border: `1.5px solid ${semEstoque ? 'rgba(0,0,0,.1)' : cat.border}`,
+                      background: 'var(--bg-secondary)', border: `1.5px solid ${semEstoque ? 'var(--border-light)' : cat.border}`,
                       borderRadius: 14, padding: 12, cursor: semEstoque ? 'not-allowed' : 'pointer',
                       display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                       minHeight: 120, opacity: semEstoque ? 0.5 : 1, transition: 'all .15s',
@@ -329,23 +329,23 @@ Obrigado pela preferência! 🙏`
                           fontSize: 10, fontWeight: 700, marginBottom: 6,
                           background: cat.bg, color: cat.txt
                         }}>{p.categoria}</span>
-                        <div style={{ fontWeight: 700, fontSize: 13, lineHeight: 1.25, color: '#0f172a' }}>{p.nome}</div>
-                        <div style={{ fontSize: 10, color: '#64748b', marginTop: 3, fontFamily: 'monospace' }}>Cod: {p.codigo}</div>
+                        <div style={{ fontWeight: 700, fontSize: 13, lineHeight: 1.25, color: 'var(--text-primary)' }}>{p.nome}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 3, fontFamily: 'monospace' }}>Cod: {p.codigo}</div>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 6 }}>
                         <div style={{
                           fontSize: 10, fontWeight: estoqueBaixo ? 700 : 500,
-                          color: estoqueBaixo ? '#dc2626' : '#64748b'
+                          color: estoqueBaixo ? 'var(--error-bg)' : 'var(--text-secondary)'
                         }}>Est: {p.estoque}</div>
                         <div style={{
-                          fontWeight: 700, fontSize: 16, color: semEstoque ? '#999' : '#ea580c',
+                          fontWeight: 700, fontSize: 16, color: semEstoque ? 'var(--text-tertiary)' : 'var(--accent-primary)',
                           fontVariantNumeric: 'tabular-nums'
                         }}>R$ {p.preco.toFixed(2).replace('.', ',')}</div>
                       </div>
                       {semEstoque && (
                         <div style={{
-                          position: 'absolute', top: 6, right: 6, background: 'rgba(220,38,38,.12)',
-                          color: '#dc2626', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 8
+                          position: 'absolute', top: 6, right: 6, background: 'rgba(239, 68, 68, 0.1)',
+                          color: 'var(--error-bg)', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 8
                         }}>SEM ESTOQUE</div>
                       )}
                     </div>
@@ -358,23 +358,23 @@ Obrigado pela preferência! 🙏`
         {/* COLUNA CARRINHO */}
         <div>
           <div style={{
-            background: '#fff', border: '1px solid rgba(15,23,42,.08)',
+            background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
             borderRadius: 16, padding: 16, position: 'sticky', top: 16
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 📝 Carrinho
                 {totalItens > 0 && (
                   <span style={{
-                    background: '#ea580c', color: '#fff',
+                    background: 'var(--accent-primary)', color: '#fff',
                     padding: '2px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700
                   }}>{totalItens}</span>
                 )}
               </h3>
             </div>
             {carrinho.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 16px', color: '#64748b', fontSize: 14 }}>
-                <div style={{ fontSize: 40, marginBottom: 8 }}>🛒</div>
+              <div style={{ textAlign: 'center', padding: '40px 16px', color: 'var(--text-secondary)', fontSize: 14 }}
+>                <div style={{ fontSize: 40, marginBottom: 8 }}>🛒</div>
                 Carrinho vazio<br />
                 <span style={{ fontSize: 12 }}>Toque nos produtos ao lado</span>
               </div>
@@ -385,83 +385,83 @@ Obrigado pela preferência! 🙏`
                     const prod = produtos.find(p => p._id === item.produtoId);
                     return (
                       <div key={i} style={{
-                        padding: '10px 0', borderBottom: '1px solid rgba(15,23,42,.06)'
+                        padding: '10px 0', borderBottom: '1px solid var(--border-light)'
                       }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                           <div style={{ flex: 1, paddingRight: 8 }}>
-                            <div style={{ fontWeight: 700, fontSize: 13, lineHeight: 1.3, color: '#0f172a' }}>{item.nome}</div>
-                            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                            <div style={{ fontWeight: 700, fontSize: 13, lineHeight: 1.3, color: 'var(--text-primary)' }}>{item.nome}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
                               Cod: {item.codigo} | Disp: {prod?.estoque ?? '-'}
                             </div>
                           </div>
                           <button onClick={() => removerItem(i)} style={{
-                            background: 'rgba(220,38,38,.1)', color: '#dc2626',
+                            background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error-bg)',
                             border: 'none', borderRadius: 8, padding: '6px 10px',
                             cursor: 'pointer', fontWeight: 700, fontSize: 12, minHeight: 32
                           }}>✕</button>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', border: '1px solid rgba(15,23,42,.1)', borderRadius: 10, overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: 10, overflow: 'hidden' }}>
                             <button onClick={() => alterarQtd(i, item.quantidade - 1)} style={{
                               width: 40, height: 40, background: 'transparent', border: 'none',
-                              cursor: 'pointer', fontSize: 18, fontWeight: 700, color: '#64748b'
+                              cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--text-secondary)'
                             }}>−</button>
                             <input type="number" min={1} value={item.quantidade}
                               onChange={e => alterarQtd(i, parseInt(e.target.value))}
                               style={{
                                 width: 48, textAlign: 'center', border: 'none',
-                                borderLeft: '1px solid rgba(15,23,42,.1)',
-                                borderRight: '1px solid rgba(15,23,42,.1)',
+                                borderLeft: '1px solid var(--border-color)',
+                                borderRight: '1px solid var(--border-color)',
                                 padding: '8px 4px', fontSize: 15, fontWeight: 700,
-                                background: '#fff', color: '#0f172a'
+                                background: 'var(--input-bg)', color: 'var(--input-text)'
                               }} />
                             <button onClick={() => alterarQtd(i, item.quantidade + 1)} style={{
                               width: 40, height: 40, background: 'transparent', border: 'none',
-                              cursor: 'pointer', fontSize: 18, fontWeight: 700, color: '#64748b'
+                              cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--text-secondary)'
                             }}>+</button>
                           </div>
                           <div style={{ flex: 1, textAlign: 'right' }}>
-                            <div style={{ fontSize: 11, color: '#64748b' }}>Unitário</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Unitário</div>
                             <input type="number" step="0.01" min={0} value={item.precoUnitario.toFixed(2)}
                               onChange={e => setPreco(i, e.target.value)}
                               style={{
                                 width: 90, textAlign: 'right', padding: '8px 10px',
-                                border: '1px solid rgba(15,23,42,.1)', borderRadius: 8,
-                                fontSize: 14, fontWeight: 700, color: '#ea580c',
-                                background: '#fff', minHeight: 38
+                                border: '1px solid var(--border-color)', borderRadius: 8,
+                                fontSize: 14, fontWeight: 700, color: 'var(--accent-primary)',
+                                background: 'var(--input-bg)', minHeight: 38
                               }} />
                           </div>
                         </div>
-                        <div style={{ textAlign: 'right', marginTop: 8, fontWeight: 700, fontSize: 15, color: '#0f172a' }}>
+                        <div style={{ textAlign: 'right', marginTop: 8, fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>
                           Subtotal: R$ {(item.precoUnitario * item.quantidade).toFixed(2).replace('.', ',')}
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <div style={{ borderTop: '1px solid rgba(15,23,42,.08)', paddingTop: 14 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14, color: '#64748b' }}>
+                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14, color: 'var(--text-secondary)' }}>
                     <span>Subtotal</span>
                     <span style={{ fontVariantNumeric: 'tabular-nums' }}>R$ {subtotal.toFixed(2).replace('.', ',')}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8 }}>
-                    <span style={{ fontSize: 14, color: '#64748b' }}>Desconto R$</span>
+                    <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Desconto R$</span>
                     <input type="number" step="0.01" min={0} value={desconto}
                       onChange={e => setDesconto(e.target.value)}
                       style={{
                         width: 100, textAlign: 'right', padding: '8px 10px',
-                        border: '1px solid rgba(15,23,42,.1)', borderRadius: 8,
-                        fontSize: 14, background: '#fff', color: '#0f172a', minHeight: 38
+                        border: '1px solid var(--border-color)', borderRadius: 8,
+                        fontSize: 14, background: 'var(--input-bg)', color: 'var(--input-text)', minHeight: 38
                       }} />
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, fontWeight: 700, fontSize: 24, color: '#ea580c' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, fontWeight: 700, fontSize: 24, color: 'var(--accent-primary)' }}>
                     <span>Total</span>
                     <span style={{ fontVariantNumeric: 'tabular-nums' }}>R$ {total.toFixed(2).replace('.', ',')}</span>
                   </div>
                   
                   {/* ✅ APENAS O BOTÃO FINALIZAR PEDIDO */}
                   <button onClick={finalizar} style={{
-                    width: '100%', padding: '14px', background: '#ea580c', color: '#fff',
+                    width: '100%', padding: '14px', background: 'var(--accent-primary)', color: '#fff',
                     border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700,
                     cursor: 'pointer', minHeight: 52
                   }}>✅ Finalizar Pedido</button>
@@ -484,20 +484,21 @@ Obrigado pela preferência! 🙏`
           zIndex: 99999, padding: 20
         }}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 400,
-            textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,.2)'
+            background: 'var(--bg-secondary)', borderRadius: 20, padding: 28, width: '100%', maxWidth: 400,
+            textAlign: 'center', boxShadow: 'var(--shadow-lg)',
+            color: 'var(--text-primary)'
           }}>
             <div style={{
               width: 72, height: 72, borderRadius: '50%', margin: '0 auto 16px',
-              background: 'rgba(22,163,74,.12)', color: '#16a34a',
+              background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success-bg)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 36
             }}>✅</div>
-            <h3 style={{ margin: '0 0 4px', fontSize: 20, color: '#0f172a' }}>Venda Finalizada!</h3>
-            <p style={{ margin: '0 0 20px', fontSize: 14, color: '#64748b' }}>
-              Pedido <strong style={{ color: '#0f172a' }}>#{modalSucesso.numero}</strong>
+            <h3 style={{ margin: '0 0 4px', fontSize: 20, color: 'var(--text-primary)' }}>Venda Finalizada!</h3>
+            <p style={{ margin: '0 0 20px', fontSize: 14, color: 'var(--text-secondary)' }}>
+              Pedido <strong style={{ color: 'var(--text-primary)' }}>#{modalSucesso.numero}</strong>
               <br />
-              Total: <strong style={{ color: '#ea580c', fontSize: 16 }}>
+              Total: <strong style={{ color: 'var(--accent-primary)', fontSize: 16 }}>
                 R$ {modalSucesso.total.toFixed(2).replace('.', ',')}
               </strong>
             </p>
