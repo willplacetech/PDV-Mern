@@ -1,10 +1,12 @@
 import { useContext, useState } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext.jsx';
+import { ThemeContext } from '../context/ThemeContext.jsx';
 
 
 export default function Layout() {
   const { user, logout } = useContext(AuthContext);
+  const { isDark, toggleTheme } = useContext(ThemeContext);
   const navigate = useNavigate();
   const location = useLocation();
   const [showConfirm, setShowConfirm] = useState(false);
@@ -17,6 +19,7 @@ export default function Layout() {
   const ativoClientes = location.pathname.startsWith('/clientes');
   const ativoPedidos = location.pathname.startsWith('/pedidos');
   const ativoContasReceber = location.pathname.startsWith('/contas-receber');
+  const ativoUsuarios = location.pathname.startsWith('/usuarios');
 
   // ✅ Título e ícone — UMA POR UMA, sem função
   let iconePagina = '🛒';
@@ -42,10 +45,14 @@ export default function Layout() {
     iconePagina = '💰';
     tituloPagina = 'A Receber';
   }
+  if (location.pathname.startsWith('/usuarios')) {
+    iconePagina = '👥';
+    tituloPagina = 'Usuários';
+  }
 
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fefcf8', fontFamily: "'Quicksand', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', fontFamily: "'Quicksand', sans-serif", color: 'var(--text-primary)', transition: 'background-color 0.3s ease, color 0.3s ease' }}>
       
       {/* ==========================================
           HEADER MOBILE
@@ -54,17 +61,28 @@ export default function Layout() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
           <span style={{ fontSize: 22, lineHeight: 1 }}>{iconePagina}</span>
           <h1 style={{
-            fontSize: 17, fontWeight: 700, margin: 0, color: '#0f172a',
+            fontSize: 17, fontWeight: 700, margin: 0, color: 'var(--text-primary)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
           }}>{tituloPagina}</h1>
         </div>
 
         <div style={{
           display: 'flex', borderRadius: 10, overflow: 'hidden',
-          border: '1px solid rgba(15,23,42,.08)', height: 38, flexShrink: 0
+          border: '1px solid var(--border-color)', height: 38, flexShrink: 0
         }}>
+          <button onClick={toggleTheme} style={{
+            background: 'transparent', color: 'var(--text-primary)',
+            border: '1px solid var(--border-color)',
+            borderRight: '1px solid var(--border-color)',
+            padding: '0 10px', fontWeight: 700, fontSize: 16,
+            cursor: 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', gap: 4,
+            transition: 'all 0.2s ease'
+          }} title={isDark ? 'Modo claro' : 'Modo escuro'}>
+            {isDark ? '☀️' : '🌙'}
+          </button>
           <div style={{
-            background: '#16a34a', color: '#fff',
+            background: 'var(--success-bg)', color: 'var(--success-text)',
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '0 10px', fontWeight: 700, fontSize: 13
           }}>
@@ -79,7 +97,7 @@ export default function Layout() {
             </span>
           </div>
           <button onClick={() => setShowConfirm(true)} style={{
-            background: '#dc2626', color: '#fff', border: 'none',
+            background: 'var(--error-bg)', color: 'var(--error-text)', border: 'none',
             borderLeft: '1px solid rgba(255,255,255,.2)',
             padding: '0 14px', fontWeight: 700, fontSize: 13,
             cursor: 'pointer', fontFamily: 'inherit',
@@ -98,14 +116,29 @@ export default function Layout() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40 }}>
           <div style={{
             width: 44, height: 44, borderRadius: 12,
-            background: 'rgba(234,88,12,.14)', color: '#ea580c',
+            background: 'var(--accent-light)', color: 'var(--accent-primary)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22
           }}>🛒</div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: '#0f172a' }}>PDV Mercado</div>
-            <div style={{ fontSize: 11, color: '#64748b' }}>Sistema de Vendas</div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)' }}>PDV Mercado</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Sistema de Vendas</div>
           </div>
         </div>
+
+        <button onClick={toggleTheme} style={{
+          width: '100%', padding: '10px',
+          background: 'var(--bg-tertiary)', color: 'var(--text-primary)',
+          border: '1px solid var(--border-color)',
+          border-radius: '10px', cursor: 'pointer',
+          font-weight: '600', font-size: '13px',
+          min-height: '40px', font-family: 'inherit',
+          marginBottom: '20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: '6px',
+          transition: 'all 0.2s ease'
+        }} title={isDark ? 'Modo claro' : 'Modo escuro'}>
+          {isDark ? '☀️ Modo Claro' : '🌙 Modo Escuro'}
+        </button>
 
         <nav style={{ flex: 1, overflowY: 'auto' }}>
           {/* ✅ ITEM 1 — PDV */}
@@ -133,25 +166,31 @@ export default function Layout() {
             <span style={{ fontSize: 18, flexShrink: 0 }}>💰</span>
             <span>A Receber</span>
           </Link>
+          {user?.role === 'admin' && (
+            <Link to="/usuarios" className={ativoUsuarios ? 'nav-link active' : 'nav-link'}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>👥</span>
+              <span>Usuários</span>
+            </Link>
+          )}
         </nav>
 
         <div style={{
-          borderTop: '1px solid rgba(15,23,42,.08)', paddingTop: 16, marginTop: 16
+          borderTop: '1px solid var(--border-color)', paddingTop: 16, marginTop: 16
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '10px 12px', borderRadius: 10,
-            background: 'rgba(22,163,74,.1)', marginBottom: 10
+            background: 'var(--accent-light)', marginBottom: 10
           }}>
             <div style={{
               width: 32, height: 32, borderRadius: '50%',
-              background: '#16a34a', color: '#fff',
+              background: 'var(--success-bg)', color: 'var(--success-text)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontWeight: 700, fontSize: 14, flexShrink: 0
             }}>{user?.username?.[0]?.toUpperCase()}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.username}</div>
-              <div style={{ fontSize: 11, color: '#64748b' }}>{user?.role}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.username}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{user?.role}</div>
             </div>
           </div>
           <button onClick={() => setShowConfirm(true)} className="btn-logout">Sair</button>
@@ -196,6 +235,12 @@ export default function Layout() {
           <span style={{ fontSize: 20, lineHeight: 1 }}>💰</span>
           <span style={{ fontSize: '10px' }}>A Receber</span>
         </Link>
+        {user?.role === 'admin' && (
+          <Link to="/usuarios" className={ativoUsuarios ? 'bottom-link active' : 'bottom-link'}>
+            <span style={{ fontSize: 20, lineHeight: 1 }}>👥</span>
+            <span style={{ fontSize: '10px' }}>Usuários</span>
+          </Link>
+        )}
       </nav>
 
 
@@ -209,30 +254,33 @@ export default function Layout() {
           zIndex: 99999, padding: 20
         }}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: '#fff', borderRadius: 16, padding: 24,
+            background: 'var(--bg-secondary)', borderRadius: 16, padding: 24,
             width: '100%', maxWidth: 340, textAlign: 'center',
-            boxShadow: '0 10px 40px rgba(0,0,0,.2)'
+            boxShadow: 'var(--shadow-lg)',
+            color: 'var(--text-primary)'
           }}>
             <div style={{
               width: 56, height: 56, borderRadius: '50%',
-              background: 'rgba(220,38,38,.12)', color: '#dc2626',
+              background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error-bg)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 28, margin: '0 auto 16px'
             }}>⚠️</div>
-            <h3 style={{ margin: '0 0 8px', fontSize: 18, color: '#0f172a' }}>Deseja realmente sair?</h3>
-            <p style={{ margin: '0 0 20px', fontSize: 14, color: '#64748b' }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: 18, color: 'var(--text-primary)' }}>Deseja realmente sair?</h3>
+            <p style={{ margin: '0 0 20px', fontSize: 14, color: 'var(--text-secondary)' }}>
               Você precisará fazer login novamente para acessar o sistema.
             </p>
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setShowConfirm(false)} style={{
-                flex: 1, padding: '12px', background: '#f1f5f9', color: '#0f172a',
-                border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'inherit', minHeight: 44
+                flex: 1, padding: '12px', background: 'var(--bg-tertiary)', color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)', borderRadius: 10, fontSize: 14, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit', minHeight: 44,
+                transition: 'all 0.2s ease'
               }}>Cancelar</button>
               <button onClick={sair} style={{
-                flex: 1, padding: '12px', background: '#dc2626', color: '#fff',
+                flex: 1, padding: '12px', background: 'var(--error-bg)', color: 'var(--error-text)',
                 border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
-                cursor: 'pointer', fontFamily: 'inherit', minHeight: 44
+                cursor: 'pointer', fontFamily: 'inherit', minHeight: 44,
+                transition: 'all 0.2s ease'
               }}>Sim, Sair</button>
             </div>
           </div>
