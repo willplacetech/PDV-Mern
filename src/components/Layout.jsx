@@ -129,9 +129,9 @@ export default function Layout() {
           width: '100%', padding: '10px',
           background: 'var(--bg-tertiary)', color: 'var(--text-primary)',
           border: '1px solid var(--border-color)',
-          border-radius: '10px', cursor: 'pointer',
-          font-weight: '600', font-size: '13px',
-          min-height: '40px', font-family: 'inherit',
+          borderRadius: '10px', cursor: 'pointer',
+          fontWeight: '600', fontSize: '13px',
+          minHeight: '40px', fontFamily: 'inherit',
           marginBottom: '20px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           gap: '6px',
@@ -305,8 +305,8 @@ export default function Layout() {
             position: fixed; top: 0; left: 0;
             width: 200px;
             height: 100vh;
-            background: #fff;
-            border-right: 1px solid rgba(15,23,42,.08);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
             padding: 24px;
             flex-direction: column;
             z-index: 50;
@@ -327,8 +327,8 @@ export default function Layout() {
             gap: 12px;
             position: sticky;
             top: 0;
-            background: #fff;
-            border-bottom: 1px solid rgba(15,23,42,.08);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
             padding: 12px 16px;
             z-index: 100;
           }
@@ -344,8 +344,8 @@ export default function Layout() {
             display: flex !important;
             position: fixed;
             bottom: 0; left: 0; right: 0;
-            background: #fff;
-            border-top: 1px solid rgba(15,23,42,.08);
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
             z-index: 9999;
             padding-bottom: env(safe-area-inset-bottom);
             padding-top: 4px;
@@ -360,35 +360,40 @@ export default function Layout() {
         .nav-link {
           display: flex; align-items: center; gap: 12px;
           padding: 12px 14px; border-radius: 10px; margin-bottom: 4px;
-          text-decoration: none; color: #64748b;
+          text-decoration: none; color: var(--text-secondary);
           font-weight: 500; font-size: 14px;
           border-left: 3px solid transparent;
           transition: all .2s;
         }
         .nav-link.active {
-          background: rgba(234,88,12,.14);
-          color: #ea580c; font-weight: 700;
-          border-left-color: #ea580c;
+          background: var(--accent-light);
+          color: var(--accent-primary); font-weight: 700;
+          border-left-color: var(--accent-primary);
         }
 
         .btn-logout {
           width: 100%; padding: 10px;
-          background: transparent; color: #dc2626;
-          border: 1px solid rgba(220,38,38,.2);
-          border-radius: 10px; cursor: pointer;
+          background: transparent; color: var(--error-bg);
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          border-radius: 10px; cursor: 'pointer';
           font-weight: 600; font-size: 13px;
           min-height: 40px; font-family: inherit;
+          transition: all 0.2s ease;
         }
 
         .bottom-link {
           flex: 1; display: flex; flex-direction: column;
           align-items: center; justify-content: center;
           padding: 6px 2px; text-decoration: none;
-          color: #64748b;
+          color: var(--text-secondary);
           font-weight: 500;
           gap: 2px; min-height: 65px;
+          transition: all 0.2s ease;
         }
-        .bottom-link.active { color: #ea580c; font-weight: 700; }
+        .bottom-link.active { 
+          color: var(--accent-primary); 
+          font-weight: 700; 
+        }
         .bottom-link span:first-child { font-size: 20px; }
 
         input, select, textarea { font-size: 16px !important; }

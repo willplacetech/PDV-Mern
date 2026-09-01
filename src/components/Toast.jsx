@@ -10,6 +10,15 @@ export const ToastProvider = ({ children }) => {
     setTimeout(() => setToast({ ...toast, open: false }), 3500);
   };
 
+  const getBackgroundColor = () => {
+    switch(toast.type) {
+      case 'error': return 'var(--error-bg)';
+      case 'success': return 'var(--success-bg)';
+      case 'warning': return 'var(--warning-bg)';
+      default: return 'var(--info-bg)';
+    }
+  };
+
   const styles = {
     position: 'fixed',
     top: 20,
@@ -19,7 +28,7 @@ export const ToastProvider = ({ children }) => {
     color: '#fff',
     fontWeight: 500,
     zIndex: 9999,
-    backgroundColor: toast.type === 'error' ? '#dc3545' : toast.type === 'success' ? '#28a745' : '#007bff',
+    backgroundColor: getBackgroundColor(),
     transition: 'all 0.3s ease'
   };
 
