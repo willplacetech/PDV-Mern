@@ -48,8 +48,7 @@ const mensagemDocumento = (valor) => {
   if (quantidade < 11) return 'Digite os 11 do CPF ou 14 do CNPJ';
   if (quantidade > 14) return 'CPF/CNPJ inválido. Verifique os dígitos.';
   if (quantidade > 11 && quantidade < 14) return 'Faltam dígitos';
-  if (!documentoValido(valor)) return 'CPF/CNPJ inválido. Verifique os dígitos.';
-  return '';
+  return documentoValido(valor) ? '' : 'CPF/CNPJ inválido. Verifique os dígitos.';
 };
 
 
