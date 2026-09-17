@@ -13,8 +13,7 @@ export default function Layout() {
   const sair = () => {
     logout();
     localStorage.clear();
-    window.history.replaceState(null, '', '/login');
-    window.location.reload();
+    window.location.href = 'https://pdv-mern-1.onrender.com/';
   };
 
   // ✅ Verificações de rota — UMA POR UMA, sem função
