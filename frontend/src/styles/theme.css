@@ -1,0 +1,187 @@
+/* ========================================
+   MODO CLARO (padrão)
+   ======================================== */
+[data-theme="light"],
+:root:not([data-theme="dark"]) {
+  --bg-primary: #fefcf8;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f5f3f0;
+  --bg-hover: #f0eeeb;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --text-tertiary: #94a3b8;
+  
+  --border-color: #e5e4e7;
+  --border-light: #f1f0ef;
+  
+  --accent-primary: #ea580c;
+  --accent-secondary: #aa3bff;
+  --accent-light: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  
+  --success-bg: #16a34a;
+  --success-text: #ffffff;
+  --error-bg: #dc2626;
+  --error-text: #ffffff;
+  --warning-bg: #f59e0b;
+  --warning-text: #ffffff;
+  --info-bg: #0ea5e9;
+  --info-text: #ffffff;
+  
+  --shadow-sm: rgba(0, 0, 0, 0.05) 0 2px 4px;
+  --shadow-md: rgba(0, 0, 0, 0.08) 0 8px 16px;
+  --shadow-lg: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  
+  --input-bg: #ffffff;
+  --input-border: #e5e4e7;
+  --input-text: #0f172a;
+  --input-placeholder: #94a3b8;
+}
+
+/* ========================================
+   MODO ESCURO
+   ======================================== */
+[data-theme="dark"] {
+  --bg-primary: #0f1419;
+  --bg-secondary: #1a1f2e;
+  --bg-tertiary: #24293d;
+  --bg-hover: #2d3447;
+  
+  --text-primary: #f3f4f6;
+  --text-secondary: #d1d5db;
+  --text-tertiary: #9ca3af;
+  
+  --border-color: #374151;
+  --border-light: #1f2937;
+  
+  --accent-primary: #ff8a50;
+  --accent-secondary: #d084ff;
+  --accent-light: rgba(208, 132, 255, 0.1);
+  --accent-border: rgba(208, 132, 255, 0.5);
+  
+  --success-bg: #10b981;
+  --success-text: #ffffff;
+  --error-bg: #ef4444;
+  --error-text: #ffffff;
+  --warning-bg: #f59e0b;
+  --warning-text: #ffffff;
+  --info-bg: #06b6d4;
+  --info-text: #ffffff;
+  
+  --shadow-sm: rgba(0, 0, 0, 0.3) 0 2px 4px;
+  --shadow-md: rgba(0, 0, 0, 0.4) 0 8px 16px;
+  --shadow-lg: rgba(0, 0, 0, 0.5) 0 10px 15px -3px, rgba(0, 0, 0, 0.3) 0 4px 6px -2px;
+  
+  --input-bg: #1a1f2e;
+  --input-border: #374151;
+  --input-text: #f3f4f6;
+  --input-placeholder: #9ca3af;
+}
+
+/* ========================================
+   ESTILOS GLOBAIS COM TEMAS
+   ======================================== */
+body,
+html {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Links */
+a {
+  color: var(--accent-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  opacity: 0.8;
+}
+
+/* Inputs */
+input,
+textarea,
+select {
+  background: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--input-border);
+  transition: all 0.2s ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--input-placeholder);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+/* Botões */
+button {
+  transition: all 0.2s ease;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+button:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* Cards */
+.card,
+[role="dialog"],
+.modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+}
+
+/* Tables */
+table {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+thead {
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--border-light);
+}
+
+tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+/* Scroll bar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
