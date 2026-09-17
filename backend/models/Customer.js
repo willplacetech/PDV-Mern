@@ -14,6 +14,14 @@ const CustomerSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  documento: {
+    type: String,
+    trim: true,
+  },
+  tipoDocumento: {
+    type: String,
+    enum: ['CPF', 'CNPJ'],
+  },
   cpf: {
     type: String,
     trim: true,
@@ -28,6 +36,6 @@ const CustomerSchema = new mongoose.Schema({
   },
 });
 
-CustomerSchema.index({ nome: 'text', telefone: 'text' });
+CustomerSchema.index({ nome: 'text', telefone: 'text', documento: 'text' });
 
 module.exports = mongoose.model('Customer', CustomerSchema);

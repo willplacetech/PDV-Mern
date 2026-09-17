@@ -4,6 +4,22 @@ const { body, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
 const Customer = require('../models/Customer');
 
+const limparDocumento = (valor) => String(valor || '').replace(/\D/g, '');
+const validarDocumento = (valor) => {
+  const digitos = limparDocumento(valor);
+  if (![11, 14].includes(digitos.length) || /^(\d)\1+$/.test(digitos)) return false;
+  const calcularDigito = (base) => {
+    let soma = 0;
+    for (let i = 0; i < base.length; i += 1) soma += Number(base[i]) * (base.length + 1 - i);
+    const resto = soma % 11;
+    return resto < 2 ? 0 : 11 - resto;
+  };
+  const base = digitos.slice(0, -2);
+  const primeiro = calcularDigito(base);
+  const segundo = calcularDigito(base + primeiro);
+  return digitos.endsWith(`${primeiro}${segundo}`);
+};
+
 // @route   GET api/customers
 // @desc    Listar clientes com busca
 // @access  Privado
@@ -13,10 +29,15 @@ router.get('/', auth, async (req, res) => {
     let query = {};
 
     if (search) {
+      const documentoBusca = limparDocumento(search);
       query = {
         $or: [
           { nome: { $regex: search, $options: 'i' } },
           { telefone: { $regex: search, $options: 'i' } },
+          ...(documentoBusca ? [
+            { documento: { $regex: documentoBusca } },
+            { cpf: { $regex: documentoBusca } },
+          ] : []),
         ],
       };
     }
@@ -42,13 +63,18 @@ router.post(
     }
 
     try {
-      const { nome, telefone, endereco, cpf } = req.body;
+      const { nome, telefone, endereco, documento, tipoDocumento } = req.body;
+      const documentoLimpo = limparDocumento(documento);
+      if (!validarDocumento(documentoLimpo)) {
+        return res.status(400).json({ msg: 'CPF/CNPJ inválido. Verifique os dígitos.' });
+      }
 
       const customer = new Customer({
         nome: nome.trim(),
         telefone: telefone ? telefone.trim() : '',
         endereco: endereco ? endereco.trim() : '',
-        cpf: cpf ? cpf.trim() : '',
+        documento: documentoLimpo,
+        tipoDocumento: tipoDocumento || (documentoLimpo.length === 14 ? 'CNPJ' : 'CPF'),
         createdBy: req.user.id,
       });
 
@@ -66,13 +92,20 @@ router.post(
 // @access  Privado
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { nome, telefone, endereco, cpf } = req.body;
+    const { nome, telefone, endereco, documento, tipoDocumento } = req.body;
 
     const updateFields = {};
     if (nome) updateFields.nome = nome.trim();
     if (telefone !== undefined) updateFields.telefone = telefone.trim();
     if (endereco !== undefined) updateFields.endereco = endereco.trim();
-    if (cpf !== undefined) updateFields.cpf = cpf.trim();
+    if (documento !== undefined) {
+      const documentoLimpo = limparDocumento(documento);
+      if (!validarDocumento(documentoLimpo)) {
+        return res.status(400).json({ msg: 'CPF/CNPJ inválido. Verifique os dígitos.' });
+      }
+      updateFields.documento = documentoLimpo;
+      updateFields.tipoDocumento = tipoDocumento || (documentoLimpo.length === 14 ? 'CNPJ' : 'CPF');
+    }
 
     const customer = await Customer.findByIdAndUpdate(
       req.params.id,

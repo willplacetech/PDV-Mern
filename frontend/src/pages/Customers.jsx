@@ -12,34 +12,66 @@ const aplicarMascaraTelefone = (valor) => {
   return apenasNumeros.replace(/^(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
 };
 
-const aplicarMascaraCPF = (valor) => {
+const aplicarMascaraDocumento = (valor) => {
   if (!valor) return '';
   const apenasNumeros = valor.replace(/\D/g, '');
+  if (apenasNumeros.length > 11) {
+    return apenasNumeros.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, '$1.$2.$3/$4-$5');
+  }
   if (apenasNumeros.length <= 3) return apenasNumeros;
   if (apenasNumeros.length <= 6) return apenasNumeros.replace(/^(\d{3})(\d{0,3})/, '$1.$2');
   if (apenasNumeros.length <= 9) return apenasNumeros.replace(/^(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
   return apenasNumeros.replace(/^(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
 };
 
+const documentoValido = (valor) => {
+  const digitos = valor.replace(/\D/g, '');
+  if (![11, 14].includes(digitos.length) || /^(\d)\1+$/.test(digitos)) return false;
+  const tamanhoBase = digitos.length - 2;
+  const calcularDigito = (base) => {
+    let soma = 0;
+    let peso = base.length + 1;
+    for (const digito of base) soma += Number(digito) * peso--;
+    const resto = soma % 11;
+    return resto < 2 ? 0 : 11 - resto;
+  };
+  const base = digitos.slice(0, tamanhoBase);
+  const primeiro = calcularDigito(base);
+  const segundo = calcularDigito(base + primeiro);
+  return digitos.endsWith(`${primeiro}${segundo}`);
+};
+
+const tipoDocumento = (valor) => valor.replace(/\D/g, '').length === 14 ? 'CNPJ' : 'CPF';
+const mensagemDocumento = (valor) => {
+  const quantidade = valor.replace(/\D/g, '').length;
+  if (quantidade < 11) return 'Digite os 11 do CPF ou 14 do CNPJ';
+  if (quantidade < 14) return 'Faltam dígitos';
+  if (quantidade > 14 || !documentoValido(valor)) return 'CPF/CNPJ inválido. Verifique os dígitos.';
+  return '';
+};
+
 
 export default function Customers() {
   const [clientes, setClientes] = useState([]);
-  const [form, setForm] = useState({ nome: '', telefone: '', endereco: '', cpf: '' });
+  const [form, setForm] = useState({ nome: '', telefone: '', endereco: '', documento: '' });
+  const [documentoErro, setDocumentoErro] = useState('');
   const [editing, setEditing] = useState(null);
   const { showToast } = useToast();
 
 
-  useEffect(() => { carregar(); }, []);
   const carregar = async () => {
     const res = await api.get('/customers');
     setClientes(res.data);
   };
 
-  // 🔒 Verifica duplicidade de CPF
-  const cpfJaExiste = (cpf, idEdicao = null) => {
-    const cpfLimpo = String(cpf).replace(/\D/g, '');
+  // O carregamento inicial sincroniza a lista com a API.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { carregar(); }, []);
+
+  const documentoJaExiste = (documento, idEdicao = null) => {
+    const documentoLimpo = String(documento).replace(/\D/g, '');
     return clientes.some(c => 
-      String(c.cpf || '').replace(/\D/g, '') === cpfLimpo && c._id !== idEdicao
+      String(c.documento || c.cpf || '').replace(/\D/g, '') === documentoLimpo && c._id !== idEdicao
     );
   };
 
@@ -48,7 +80,7 @@ export default function Customers() {
     e.preventDefault();
     
     const telefoneLimpo = form.telefone.replace(/\D/g, '');
-    const cpfLimpo = form.cpf.replace(/\D/g, '');
+    const documentoLimpo = form.documento.replace(/\D/g, '');
 
     // ✅ Validações obrigatórias
     if (!form.nome.trim()) {
@@ -57,19 +89,21 @@ export default function Customers() {
     if (telefoneLimpo.length !== 11) {
       return showToast('⚠️ Telefone inválido! Digite com DDD e 9 dígitos', 'warning');
     }
-    if (cpfLimpo.length !== 11) {
-      return showToast('⚠️ CPF inválido! Digite os 11 números', 'warning');
+    const erro = mensagemDocumento(form.documento);
+    if (erro) {
+      setDocumentoErro(erro);
+      return showToast(`⚠️ ${erro}`, 'warning');
     }
 
-    // 🔒 Verifica duplicidade de CPF
-    if (cpfJaExiste(cpfLimpo, editing?._id)) {
-      return showToast('⚠️ Este CPF já está cadastrado!', 'warning');
+    if (documentoJaExiste(documentoLimpo, editing?._id)) {
+      return showToast('⚠️ Este documento já está cadastrado!', 'warning');
     }
 
     const dadosParaEnviar = {
       nome: form.nome.trim(),
       telefone: telefoneLimpo,
-      cpf: cpfLimpo,
+      documento: documentoLimpo,
+      tipoDocumento: tipoDocumento(form.documento),
       endereco: form.endereco?.trim() || ''
     };
 
@@ -79,10 +113,11 @@ export default function Customers() {
         : await api.post('/customers', dadosParaEnviar);
       
       showToast(editing ? '✅ Cliente atualizado!' : '✅ Cliente cadastrado!', 'success');
-      setForm({ nome: '', telefone: '', endereco: '', cpf: '' });
+      setForm({ nome: '', telefone: '', endereco: '', documento: '' });
+      setDocumentoErro('');
       setEditing(null);
       carregar();
-    } catch (err) {
+    } catch {
       showToast('❌ Erro ao salvar', 'error');
     }
   };
@@ -94,7 +129,7 @@ export default function Customers() {
       nome: c.nome, 
       telefone: aplicarMascaraTelefone(c.telefone || ''), 
       endereco: c.endereco || '', 
-      cpf: aplicarMascaraCPF(c.cpf || '') 
+      documento: aplicarMascaraDocumento(c.documento || c.cpf || '')
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -114,9 +149,12 @@ export default function Customers() {
   };
 
   const handleCpfChange = (e) => {
-    const valor = e.target.value.replace(/\D/g, '').slice(0, 11);
-    setForm({ ...form, cpf: aplicarMascaraCPF(valor) });
+    const valor = e.target.value.replace(/\D/g, '').slice(0, 14);
+    setForm({ ...form, documento: aplicarMascaraDocumento(valor) });
+    setDocumentoErro('');
   };
+
+  const validarDocumento = () => setDocumentoErro(mensagemDocumento(form.documento));
 
 
   return (
@@ -162,15 +200,17 @@ export default function Customers() {
             </div>
             <div>
               <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>
-                CPF * <span style={{ color: 'var(--error-bg)', fontSize: 10 }}>(obrigatório/único)</span>
+                Documento * <span style={{ color: 'var(--error-bg)', fontSize: 10 }}>(CPF ou CNPJ)</span>
               </label>
               <input 
-                placeholder="000.000.000-00" 
-                value={form.cpf}
+                placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                value={form.documento}
                 onChange={handleCpfChange}
-                style={inputStyle} 
+                onBlur={validarDocumento}
+                style={{ ...inputStyle, borderColor: documentoErro ? 'var(--error-bg)' : 'var(--border-color)' }}
                 required
               />
+              {documentoErro && <small style={{ color: 'var(--error-bg)', display: 'block', marginTop: 5 }}>{documentoErro}</small>}
             </div>
             <div>
               <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>
@@ -192,7 +232,8 @@ export default function Customers() {
             }}>{editing ? 'Atualizar' : 'Cadastrar'}</button>
             {editing && <button type="button" onClick={() => { 
               setEditing(null); 
-              setForm({ nome: '', telefone: '', endereco: '', cpf: '' }); 
+              setForm({ nome: '', telefone: '', endereco: '', documento: '' });
+              setDocumentoErro('');
             }} style={{
               padding: '12px 20px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)',
               border: '1.5px solid var(--border-color)', borderRadius: 10,
@@ -217,7 +258,7 @@ export default function Customers() {
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                {['Nome', 'Telefone', 'CPF', 'Endereço', 'Ações'].map(h => (
+                {['Nome', 'Telefone', 'Documento', 'Endereço', 'Ações'].map(h => (
                   <th key={h} style={{ padding: '10px 8px', textAlign: 'left', fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</th>
                 ))}
               </tr>
@@ -232,7 +273,7 @@ export default function Customers() {
                     {aplicarMascaraTelefone(c.telefone) || '-'}
                   </td>
                   <td style={{ padding: '10px 8px', fontSize: 13, fontFamily: 'monospace' }}>
-                    {aplicarMascaraCPF(c.cpf) || '-'}
+                    {aplicarMascaraDocumento(c.documento || c.cpf) || '-'}
                   </td>
                   <td style={{ padding: '10px 8px', fontSize: 13, color: 'var(--text-secondary)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {c.endereco || '-'}
