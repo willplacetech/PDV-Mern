@@ -27,17 +27,18 @@ const aplicarMascaraDocumento = (valor) => {
 const documentoValido = (valor) => {
   const digitos = valor.replace(/\D/g, '');
   if (![11, 14].includes(digitos.length) || /^(\d)\1+$/.test(digitos)) return false;
-  const tamanhoBase = digitos.length - 2;
-  const calcularDigito = (base) => {
+  const calcularDigito = (base, pesos) => {
     let soma = 0;
-    let peso = base.length + 1;
-    for (const digito of base) soma += Number(digito) * peso--;
+    for (let i = 0; i < base.length; i += 1) soma += Number(base[i]) * pesos[i];
     const resto = soma % 11;
     return resto < 2 ? 0 : 11 - resto;
   };
-  const base = digitos.slice(0, tamanhoBase);
-  const primeiro = calcularDigito(base);
-  const segundo = calcularDigito(base + primeiro);
+  const cpf = digitos.length === 11;
+  const pesosPrimeiro = cpf ? [10, 9, 8, 7, 6, 5, 4, 3, 2] : [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const pesosSegundo = cpf ? [11, 10, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const base = digitos.slice(0, -2);
+  const primeiro = calcularDigito(base, pesosPrimeiro);
+  const segundo = calcularDigito(base + primeiro, pesosSegundo);
   return digitos.endsWith(`${primeiro}${segundo}`);
 };
 

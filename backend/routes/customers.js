@@ -9,15 +9,18 @@ const normalizarEndereco = valor => valor && typeof valor === 'object' ? valor :
 const validarDocumento = (valor) => {
   const digitos = limparDocumento(valor);
   if (![11, 14].includes(digitos.length) || /^(\d)\1+$/.test(digitos)) return false;
-  const calcularDigito = (base) => {
+  const calcularDigito = (base, pesos) => {
     let soma = 0;
-    for (let i = 0; i < base.length; i += 1) soma += Number(base[i]) * (base.length + 1 - i);
+    for (let i = 0; i < base.length; i += 1) soma += Number(base[i]) * pesos[i];
     const resto = soma % 11;
     return resto < 2 ? 0 : 11 - resto;
   };
+  const cpf = digitos.length === 11;
+  const pesosPrimeiro = cpf ? [10, 9, 8, 7, 6, 5, 4, 3, 2] : [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const pesosSegundo = cpf ? [11, 10, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
   const base = digitos.slice(0, -2);
-  const primeiro = calcularDigito(base);
-  const segundo = calcularDigito(base + primeiro);
+  const primeiro = calcularDigito(base, pesosPrimeiro);
+  const segundo = calcularDigito(base + primeiro, pesosSegundo);
   return digitos.endsWith(`${primeiro}${segundo}`);
 };
 
