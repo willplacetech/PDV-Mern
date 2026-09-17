@@ -19,29 +19,44 @@ router.post('/', auth, async (req, res) => {
     }
 
     const quantidades = new Map();
+    const pesos = new Map();
     for (const item of req.body.itens) {
-      if (!mongoose.isValidObjectId(item.produtoId) || !Number.isInteger(item.quantidade) || item.quantidade < 1) {
+      const unidadeValida = Number.isInteger(item.quantidade) && item.quantidade >= 1;
+      const pesoValido = Number.isFinite(Number(item.pesoKg)) && Number(item.pesoKg) > 0;
+      if (!mongoose.isValidObjectId(item.produtoId) || (!unidadeValida && !pesoValido)) {
         return res.status(400).json({ msg: 'Item de pedido inválido' });
       }
-      quantidades.set(item.produtoId, (quantidades.get(item.produtoId) || 0) + item.quantidade);
+      if (pesoValido) {
+        pesos.set(item.produtoId, (pesos.get(item.produtoId) || 0) + Number(item.pesoKg));
+      } else {
+        quantidades.set(item.produtoId, (quantidades.get(item.produtoId) || 0) + item.quantidade);
+      }
     }
 
     session.startTransaction();
-    const produtos = await Product.find({ _id: { $in: [...quantidades.keys()] } }).session(session);
+    const ids = [...new Set([...quantidades.keys(), ...pesos.keys()])];
+    const produtos = await Product.find({ _id: { $in: ids } }).session(session);
     const produtosPorId = new Map(produtos.map(produto => [produto.id, produto]));
     const itens = req.body.itens.map(item => {
       const produto = produtosPorId.get(item.produtoId);
       if (!produto) throw new Error(`Produto não encontrado: ${item.produtoId}`);
+      const pesoKg = Number(item.pesoKg);
+      const pesavel = produto.tipo === 'peso';
+      if (pesavel && (!Number.isFinite(pesoKg) || pesoKg <= 0)) throw new Error(`Informe o peso de "${produto.nome}"`);
+      if (!pesavel && !Number.isInteger(item.quantidade)) throw new Error(`Quantidade inválida para "${produto.nome}"`);
       return {
         produtoId: produto.id,
         codigo: produto.codigo,
         nome: produto.nome,
-        precoUnitario: produto.preco,
-        quantidade: item.quantidade,
+        categoria: produto.categoria,
+        precoUnitario: pesavel ? produto.precoVendaPorKg : produto.preco,
+        quantidade: pesavel ? 1 : item.quantidade,
+        pesoKg: pesavel ? pesoKg : undefined,
+        tipo: produto.tipo || 'unidade',
       };
     });
 
-    const subtotal = itens.reduce((soma, item) => soma + item.precoUnitario * item.quantidade, 0);
+    const subtotal = itens.reduce((soma, item) => soma + item.precoUnitario * (item.pesoKg || item.quantidade), 0);
     const desconto = Number(req.body.desconto || 0);
     if (!Number.isFinite(desconto) || desconto < 0 || desconto > subtotal) {
       throw new Error('Desconto inválido');
@@ -51,6 +66,14 @@ router.post('/', auth, async (req, res) => {
       const atualizado = await Product.findOneAndUpdate(
         { _id: produtoId, estoque: { $gte: quantidade } },
         { $inc: { estoque: -quantidade } },
+        { new: true, session }
+      );
+      if (!atualizado) throw new Error(`Estoque insuficiente para "${produtosPorId.get(produtoId)?.nome || produtoId}"`);
+    }
+    for (const [produtoId, pesoKg] of pesos) {
+      const atualizado = await Product.findOneAndUpdate(
+        { _id: produtoId, estoqueKg: { $gte: pesoKg } },
+        { $inc: { estoqueKg: -pesoKg } },
         { new: true, session }
       );
       if (!atualizado) throw new Error(`Estoque insuficiente para "${produtosPorId.get(produtoId)?.nome || produtoId}"`);
@@ -82,7 +105,7 @@ router.post('/', auth, async (req, res) => {
 // Listar todos (com filtros)
 router.get('/', auth, async (req, res) => {
   try {
-    const { clienteId, status, inicio, fim } = req.query;
+    const { clienteId, status, inicio, fim, categoria } = req.query;
     const filtro = {};
     
     if (clienteId) filtro.clienteId = clienteId;
@@ -93,6 +116,7 @@ router.get('/', auth, async (req, res) => {
         $lte: new Date(new Date(fim).setHours(23,59,59))
       };
     }
+    if (categoria) filtro.itens = { $elemMatch: { categoria } };
 
     const pedidos = await Order.find(filtro).sort({ createdAt: -1 });
     res.json(pedidos);
@@ -196,7 +220,7 @@ router.patch('/:id/cancelar', auth, async (req, res) => {
     for (const item of pedido.itens) {
       await Product.findByIdAndUpdate(
         item.produtoId,
-        { $inc: { estoque: item.quantidade } },
+        item.tipo === 'peso' ? { $inc: { estoqueKg: item.pesoKg } } : { $inc: { estoque: item.quantidade } },
         { new: true }
       );
     }

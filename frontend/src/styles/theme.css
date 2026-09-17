@@ -3,7 +3,7 @@
    ======================================== */
 [data-theme="light"],
 :root:not([data-theme="dark"]) {
-  --bg-primary: #fefcf8;
+  --bg-primary: #f8f9fa;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f5f3f0;
   --bg-hover: #f0eeeb;
@@ -15,16 +15,16 @@
   --border-color: #e5e4e7;
   --border-light: #f1f0ef;
   
-  --accent-primary: #ea580c;
-  --accent-secondary: #aa3bff;
-  --accent-light: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
+  --accent-primary: #27ae60;
+  --accent-secondary: #2c3e50;
+  --accent-light: rgba(39, 174, 96, 0.1);
+  --accent-border: rgba(39, 174, 96, 0.5);
   
   --success-bg: #16a34a;
   --success-text: #ffffff;
   --error-bg: #dc2626;
   --error-text: #ffffff;
-  --warning-bg: #f59e0b;
+  --warning-bg: #f39c12;
   --warning-text: #ffffff;
   --info-bg: #0ea5e9;
   --info-text: #ffffff;
@@ -55,16 +55,16 @@
   --border-color: #374151;
   --border-light: #1f2937;
   
-  --accent-primary: #ff8a50;
-  --accent-secondary: #d084ff;
-  --accent-light: rgba(208, 132, 255, 0.1);
-  --accent-border: rgba(208, 132, 255, 0.5);
+  --accent-primary: #2ecc71;
+  --accent-secondary: #5dade2;
+  --accent-light: rgba(46, 204, 113, 0.1);
+  --accent-border: rgba(46, 204, 113, 0.5);
   
   --success-bg: #10b981;
   --success-text: #ffffff;
   --error-bg: #ef4444;
   --error-text: #ffffff;
-  --warning-bg: #f59e0b;
+  --warning-bg: #f39c12;
   --warning-text: #ffffff;
   --info-bg: #06b6d4;
   --info-text: #ffffff;
@@ -165,6 +165,74 @@ tbody tr {
 
 tbody tr:hover {
   background: var(--bg-hover);
+}
+
+#splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #f8f9fa;
+  color: #2c3e50;
+  font-family: 'Quicksand', sans-serif;
+}
+
+#splash span {
+  color: #607080;
+  font-size: 13px;
+}
+
+.splash-mark {
+  display: grid;
+  width: 76px;
+  height: 76px;
+  place-items: center;
+  border-radius: 22px;
+  background: #27ae60;
+  color: #fff;
+  font-size: 40px;
+  box-shadow: 0 12px 26px rgba(39, 174, 96, .25);
+}
+
+.pwa-install-banner {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  max-width: calc(100vw - 36px);
+  padding: 14px 16px;
+  border: 1px solid #b7dfc6;
+  border-radius: 12px;
+  background: #fff;
+  color: #2c3e50;
+  box-shadow: 0 12px 28px rgba(44, 62, 80, .18);
+}
+
+.pwa-install-banner div {
+  display: grid;
+  gap: 3px;
+}
+
+.pwa-install-banner span {
+  color: #607080;
+  font-size: 12px;
+}
+
+.pwa-install-banner button {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: #27ae60;
+  color: #fff;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* Scroll bar */

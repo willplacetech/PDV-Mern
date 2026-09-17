@@ -53,7 +53,7 @@ const mensagemDocumento = (valor) => {
 
 export default function Customers() {
   const [clientes, setClientes] = useState([]);
-  const [form, setForm] = useState({ nome: '', telefone: '', endereco: '', documento: '' });
+  const [form, setForm] = useState({ nome: '', telefone: '', endereco: '', email: '', documento: '' });
   const [documentoErro, setDocumentoErro] = useState('');
   const [editing, setEditing] = useState(null);
   const { showToast } = useToast();
@@ -104,7 +104,8 @@ export default function Customers() {
       telefone: telefoneLimpo,
       documento: documentoLimpo,
       tipoDocumento: tipoDocumento(form.documento),
-      endereco: form.endereco?.trim() || ''
+      endereco: form.endereco?.trim() || '',
+      email: form.email?.trim() || ''
     };
 
     try {
@@ -113,7 +114,7 @@ export default function Customers() {
         : await api.post('/customers', dadosParaEnviar);
       
       showToast(editing ? '✅ Cliente atualizado!' : '✅ Cliente cadastrado!', 'success');
-      setForm({ nome: '', telefone: '', endereco: '', documento: '' });
+      setForm({ nome: '', telefone: '', endereco: '', email: '', documento: '' });
       setDocumentoErro('');
       setEditing(null);
       carregar();
@@ -128,7 +129,8 @@ export default function Customers() {
     setForm({ 
       nome: c.nome, 
       telefone: aplicarMascaraTelefone(c.telefone || ''), 
-      endereco: c.endereco || '', 
+      endereco: typeof c.endereco === 'object' ? Object.values(c.endereco).filter(Boolean).join(', ') : (c.endereco || ''),
+      email: c.email || '',
       documento: aplicarMascaraDocumento(c.documento || c.cpf || '')
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -199,6 +201,16 @@ export default function Customers() {
               />
             </div>
             <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>E-mail</label>
+              <input
+                type="email"
+                placeholder="cliente@email.com"
+                value={form.email}
+                onChange={e => setForm({ ...form, email: e.target.value })}
+                style={inputStyle}
+              />
+            </div>
+            <div>
               <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>
                 Documento * <span style={{ color: 'var(--error-bg)', fontSize: 10 }}>(CPF ou CNPJ)</span>
               </label>
@@ -232,7 +244,7 @@ export default function Customers() {
             }}>{editing ? 'Atualizar' : 'Cadastrar'}</button>
             {editing && <button type="button" onClick={() => { 
               setEditing(null); 
-              setForm({ nome: '', telefone: '', endereco: '', documento: '' });
+              setForm({ nome: '', telefone: '', endereco: '', email: '', documento: '' });
               setDocumentoErro('');
             }} style={{
               padding: '12px 20px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)',
@@ -276,7 +288,7 @@ export default function Customers() {
                     {aplicarMascaraDocumento(c.documento || c.cpf) || '-'}
                   </td>
                   <td style={{ padding: '10px 8px', fontSize: 13, color: 'var(--text-secondary)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {c.endereco || '-'}
+                    {typeof c.endereco === 'object' ? Object.values(c.endereco).filter(Boolean).join(', ') || '-' : (c.endereco || '-')}
                   </td>
                   <td style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button onClick={() => alterar(c)} style={btnTable}>Editar</button>

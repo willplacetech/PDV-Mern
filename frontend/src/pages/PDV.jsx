@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../services/api.jsx';
 import { useToast } from '../components/Toast.jsx';
+import { enfileirarVenda, sincronizarVendas } from '../services/offlineSales.js';
 
 
 const corCategoria = {
+  Frios: { bg: 'rgba(14,165,233,.12)', txt: '#0284c7', border: 'rgba(14,165,233,.25)' },
+  Açougue: { bg: 'rgba(220,38,38,.12)', txt: '#dc2626', border: 'rgba(220,38,38,.25)' },
+  Mercearia: { bg: 'rgba(124,58,237,.12)', txt: '#7c3aed', border: 'rgba(124,58,237,.25)' },
   Alimentos: { bg: 'rgba(234,88,12,.12)', txt: '#ea580c', border: 'rgba(234,88,12,.25)' },
   Bebidas: { bg: 'rgba(37,99,171,.12)', txt: '#2563ab', border: 'rgba(37,99,171,.25)' },
   Limpeza: { bg: 'rgba(13,148,136,.12)', txt: '#0d9488', border: 'rgba(13,148,136,.25)' },
@@ -12,6 +16,14 @@ const corCategoria = {
   Padaria: { bg: 'rgba(180,83,9,.12)', txt: '#b45309', border: 'rgba(180,83,9,.25)' },
   Outros: { bg: 'rgba(100,116,139,.12)', txt: '#64748b', border: 'rgba(100,116,139,.25)' }
 };
+
+const converterPesoKg = valor => {
+  const texto = String(valor || '').trim().toLowerCase().replace(',', '.');
+  if (texto.endsWith('g')) return Number.parseFloat(texto) / 1000;
+  return Number.parseFloat(texto);
+};
+const formatarMoeda = valor => Number(valor || 0).toFixed(2).replace('.', ',');
+const formatarPeso = valor => Number(valor || 0).toFixed(3).replace('.', ',');
 
 
 export default function PDV() {
@@ -26,7 +38,19 @@ export default function PDV() {
   const selectClienteRef = useRef(null); // ✅ Referência para focar na caixa
 
 
+  // O carregamento inicial depende do ciclo de montagem do PDV.
+  // eslint-disable-next-line react-hooks/immutability, react-hooks/exhaustive-deps
   useEffect(() => { carregarDados(); }, []);
+
+  useEffect(() => {
+    const sincronizar = async () => {
+      const quantidade = await sincronizarVendas();
+      if (quantidade) showToast(`${quantidade} venda(s) sincronizada(s)!`, 'success');
+    };
+    window.addEventListener('online', sincronizar);
+    sincronizar();
+    return () => window.removeEventListener('online', sincronizar);
+  }, [showToast]);
 
 
   const carregarDados = async () => {
@@ -43,15 +67,23 @@ export default function PDV() {
 
 
   const adicionarItem = (prod) => {
-    if (prod.estoque <= 0) return showToast('Produto sem estoque!', 'error');
+    const estoqueDisponivel = prod.tipo === 'peso' ? Number(prod.estoqueKg || 0) : Number(prod.estoque || 0);
+    if (estoqueDisponivel <= 0) return showToast('Produto sem estoque!', 'error');
     const existe = carrinho.find(i => i.produtoId === prod._id);
     if (existe) {
-      if (existe.quantidade >= prod.estoque) return showToast('Estoque máximo atingido!', 'warning');
-      setCarrinho(carrinho.map(i => i.produtoId === prod._id ? { ...i, quantidade: i.quantidade + 1 } : i));
+      if (prod.tipo === 'peso') {
+        if (existe.pesoKg + 0.1 > estoqueDisponivel) return showToast('Estoque máximo atingido!', 'warning');
+        setCarrinho(carrinho.map(i => i.produtoId === prod._id ? { ...i, pesoKg: i.pesoKg + 0.1 } : i));
+      } else {
+        if (existe.quantidade >= estoqueDisponivel) return showToast('Estoque máximo atingido!', 'warning');
+        setCarrinho(carrinho.map(i => i.produtoId === prod._id ? { ...i, quantidade: i.quantidade + 1 } : i));
+      }
     } else {
       setCarrinho([...carrinho, {
         produtoId: prod._id, codigo: prod.codigo, nome: prod.nome,
-        precoUnitario: prod.preco, quantidade: 1
+        tipo: prod.tipo || 'unidade',
+        precoUnitario: prod.tipo === 'peso' ? prod.precoVendaPorKg : prod.preco,
+        ...(prod.tipo === 'peso' ? { pesoKg: 0.1, pesoInput: '0,100' } : { quantidade: 1 })
       }]);
     }
   };
@@ -66,6 +98,17 @@ export default function PDV() {
     setCarrinho(novos);
   };
 
+  const alterarPeso = (idx, valor) => {
+    const pesoKg = converterPesoKg(valor);
+    const prod = produtos.find(p => p._id === carrinho[idx].produtoId);
+    if (!Number.isFinite(pesoKg) || pesoKg <= 0) {
+      setCarrinho(carrinho.map((item, itemIdx) => itemIdx === idx ? { ...item, pesoInput: valor } : item));
+      return;
+    }
+    if (pesoKg > Number(prod?.estoqueKg || 0)) return showToast(`Máximo: ${formatarPeso(prod.estoqueKg)} kg`, 'warning');
+    setCarrinho(carrinho.map((item, itemIdx) => itemIdx === idx ? { ...item, pesoKg, pesoInput: valor } : item));
+  };
+
 
   const setPreco = (idx, valor) => {
     const novos = [...carrinho];
@@ -77,9 +120,9 @@ export default function PDV() {
   const removerItem = (idx) => setCarrinho(carrinho.filter((_, i) => i !== idx));
 
 
-  const subtotal = carrinho.reduce((ac, i) => ac + i.precoUnitario * i.quantidade, 0);
+  const subtotal = carrinho.reduce((ac, i) => ac + i.precoUnitario * (i.tipo === 'peso' ? i.pesoKg : i.quantidade), 0);
   const total = Math.max(0, subtotal - (parseFloat(desconto) || 0));
-  const totalItens = carrinho.reduce((ac, i) => ac + i.quantidade, 0);
+  const totalItens = carrinho.reduce((ac, i) => ac + (i.tipo === 'peso' ? 1 : i.quantidade), 0);
   const clienteSelecionado = clientes.find(c => c._id === clienteId);
 
 
@@ -94,12 +137,14 @@ export default function PDV() {
       return showToast('O desconto não pode ser maior que o subtotal.', 'warning');
     }
 
-    try {
-      const res = await api.post('/orders', {
+    const dadosVenda = {
         itens: carrinho, subtotal, desconto: descontoNumerico, total,
         clienteId, clienteNome: clienteSelecionado?.nome || 'Cliente não identificado',
         clienteTelefone: clienteSelecionado?.telefone || ''
-      });
+    };
+
+    try {
+      const res = await api.post('/orders', dadosVenda);
       
       showToast('✅ Venda finalizada com sucesso!', 'success');
       
@@ -113,6 +158,12 @@ export default function PDV() {
       setCarrinho([]); setDesconto(0); setClienteId('');
       carregarDados();
     } catch (err) {
+      if (!navigator.onLine) {
+        enfileirarVenda(dadosVenda);
+        showToast('Sem internet — venda salva, sincronizando...', 'warning');
+        setCarrinho([]); setDesconto(0); setClienteId('');
+        return;
+      }
       showToast(err.response?.data?.msg || 'Erro ao finalizar', 'error');
     }
   };
@@ -129,9 +180,9 @@ export default function PDV() {
       <div style="display:flex; justify-content:space-between; border-bottom: 1px dashed #000; padding: 4px 0;">
         <div style="flex:1; margin-right:8px;">
           <div style="font-weight:bold;">${item.nome}</div>
-          <div style="font-size:10px;">Cod: ${item.codigo} | Qtd: ${item.quantidade} x R$ ${item.precoUnitario.toFixed(2).replace('.',',')}</div>
+          <div style="font-size:10px;">${item.tipo === 'peso' ? `${formatarPeso(item.pesoKg)} kg × R$ ${formatarMoeda(item.precoUnitario)}/kg` : `Cod: ${item.codigo} | Qtd: ${item.quantidade} x R$ ${formatarMoeda(item.precoUnitario)}`}</div>
         </div>
-        <div style="font-weight:bold; white-space:nowrap;">R$ ${(item.quantidade * item.precoUnitario).toFixed(2).replace('.',',')}</div>
+        <div style="font-weight:bold; white-space:nowrap;">R$ ${formatarMoeda((item.tipo === 'peso' ? item.pesoKg : item.quantidade) * item.precoUnitario)}</div>
       </div>
     `).join('');
     const cupom = `
@@ -208,7 +259,7 @@ export default function PDV() {
     const data = new Date(pedido.createdAt).toLocaleString('pt-BR');
     
     const itensTexto = pedido.itens.map(item => 
-      `• ${item.nome}\n  ${item.quantidade} x R$ ${item.precoUnitario.toFixed(2).replace('.',',')} = R$ ${(item.quantidade * item.precoUnitario).toFixed(2).replace('.',',')}`
+      `• ${item.nome}\n  ${item.tipo === 'peso' ? `${formatarPeso(item.pesoKg)} kg x R$ ${formatarMoeda(item.precoUnitario)}/kg` : `${item.quantidade} x R$ ${formatarMoeda(item.precoUnitario)}`} = R$ ${formatarMoeda((item.tipo === 'peso' ? item.pesoKg : item.quantidade) * item.precoUnitario)}`
     ).join('\n');
     const texto = encodeURIComponent(
 `🛒 *PEDIDO* #${pedido.numero}
@@ -313,8 +364,9 @@ Obrigado pela preferência! 🙏`
               }}>
                 {filtrados.map(p => {
                   const cat = corCategoria[p.categoria] || corCategoria.Outros;
-                  const semEstoque = p.estoque <= 0;
-                  const estoqueBaixo = p.estoque > 0 && p.estoque <= 5;
+                  const estoqueDisponivel = p.tipo === 'peso' ? Number(p.estoqueKg || 0) : Number(p.estoque || 0);
+                  const semEstoque = estoqueDisponivel <= 0;
+                  const estoqueBaixo = estoqueDisponivel > 0 && estoqueDisponivel <= 5;
                   return (
                     <div key={p._id} onClick={() => adicionarItem(p)} style={{
                       background: 'var(--bg-secondary)', border: `1.5px solid ${semEstoque ? 'var(--border-light)' : cat.border}`,
@@ -336,11 +388,11 @@ Obrigado pela preferência! 🙏`
                         <div style={{
                           fontSize: 10, fontWeight: estoqueBaixo ? 700 : 500,
                           color: estoqueBaixo ? 'var(--error-bg)' : 'var(--text-secondary)'
-                        }}>Est: {p.estoque}</div>
+                        }}>Est: {p.tipo === 'peso' ? `${formatarPeso(p.estoqueKg)} kg` : p.estoque}</div>
                         <div style={{
                           fontWeight: 700, fontSize: 16, color: semEstoque ? 'var(--text-tertiary)' : 'var(--accent-primary)',
                           fontVariantNumeric: 'tabular-nums'
-                        }}>R$ {p.preco.toFixed(2).replace('.', ',')}</div>
+                        }}>R$ {formatarMoeda(p.tipo === 'peso' ? p.precoVendaPorKg : p.preco)}{p.tipo === 'peso' ? '/kg' : ''}</div>
                       </div>
                       {semEstoque && (
                         <div style={{
@@ -391,7 +443,7 @@ Obrigado pela preferência! 🙏`
                           <div style={{ flex: 1, paddingRight: 8 }}>
                             <div style={{ fontWeight: 700, fontSize: 13, lineHeight: 1.3, color: 'var(--text-primary)' }}>{item.nome}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
-                              Cod: {item.codigo} | Disp: {prod?.estoque ?? '-'}
+                              Cod: {item.codigo} | Disp: {item.tipo === 'peso' ? `${formatarPeso(prod?.estoqueKg)} kg` : (prod?.estoque ?? '-')}
                             </div>
                           </div>
                           <button onClick={() => removerItem(i)} style={{
@@ -401,29 +453,28 @@ Obrigado pela preferência! 🙏`
                           }}>✕</button>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: 10, overflow: 'hidden' }}>
-                            <button onClick={() => alterarQtd(i, item.quantidade - 1)} style={{
-                              width: 40, height: 40, background: 'transparent', border: 'none',
-                              cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--text-secondary)'
-                            }}>−</button>
-                            <input type="number" min={1} value={item.quantidade}
-                              onChange={e => alterarQtd(i, parseInt(e.target.value))}
-                              style={{
-                                width: 48, textAlign: 'center', border: 'none',
-                                borderLeft: '1px solid var(--border-color)',
-                                borderRight: '1px solid var(--border-color)',
-                                padding: '8px 4px', fontSize: 15, fontWeight: 700,
-                                background: 'var(--input-bg)', color: 'var(--input-text)'
-                              }} />
-                            <button onClick={() => alterarQtd(i, item.quantidade + 1)} style={{
-                              width: 40, height: 40, background: 'transparent', border: 'none',
-                              cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--text-secondary)'
-                            }}>+</button>
-                          </div>
+                          {item.tipo === 'peso' ? (
+                            <div style={{ flex: 1 }}>
+                              <label style={{ display: 'block', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>Peso (kg ou g)</label>
+                              <input type="text" inputMode="decimal" value={item.pesoInput ?? formatarPeso(item.pesoKg)}
+                                onChange={e => alterarPeso(i, e.target.value)}
+                                style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border-color)', borderRadius: 8, fontSize: 14, fontWeight: 700, background: 'var(--input-bg)', color: 'var(--input-text)', minHeight: 38 }} />
+                              <div style={{ display: 'flex', gap: 4, marginTop: 5 }}>
+                                {[0.1, 0.2, 0.5].map(peso => <button key={peso} type="button" onClick={() => alterarPeso(i, formatarPeso(peso))} style={{ padding: '4px 7px', fontSize: 10, borderRadius: 6 }}>{peso * 1000}g</button>)}
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: 10, overflow: 'hidden' }}>
+                              <button onClick={() => alterarQtd(i, item.quantidade - 1)} style={{ width: 40, height: 40, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--text-secondary)' }}>−</button>
+                              <input type="number" min={1} value={item.quantidade} onChange={e => alterarQtd(i, parseInt(e.target.value))} style={{ width: 48, textAlign: 'center', border: 'none', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', padding: '8px 4px', fontSize: 15, fontWeight: 700, background: 'var(--input-bg)', color: 'var(--input-text)' }} />
+                              <button onClick={() => alterarQtd(i, item.quantidade + 1)} style={{ width: 40, height: 40, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--text-secondary)' }}>+</button>
+                            </div>
+                          )}
                           <div style={{ flex: 1, textAlign: 'right' }}>
-                            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Unitário</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{item.tipo === 'peso' ? 'R$/kg' : 'Unitário'}</div>
                             <input type="number" step="0.01" min={0} value={item.precoUnitario.toFixed(2)}
                               onChange={e => setPreco(i, e.target.value)}
+                              readOnly={item.tipo === 'peso'}
                               style={{
                                 width: 90, textAlign: 'right', padding: '8px 10px',
                                 border: '1px solid var(--border-color)', borderRadius: 8,
@@ -433,7 +484,7 @@ Obrigado pela preferência! 🙏`
                           </div>
                         </div>
                         <div style={{ textAlign: 'right', marginTop: 8, fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>
-                          Subtotal: R$ {(item.precoUnitario * item.quantidade).toFixed(2).replace('.', ',')}
+                          Subtotal: R$ {(item.precoUnitario * (item.tipo === 'peso' ? item.pesoKg : item.quantidade)).toFixed(2).replace('.', ',')}
                         </div>
                       </div>
                     );

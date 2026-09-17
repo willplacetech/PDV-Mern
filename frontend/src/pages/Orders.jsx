@@ -5,19 +5,21 @@ export default function Orders() {
   const [pedidos, setPedidos] = useState([]);
   const [selecionado, setSelecionado] = useState(null);
   const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [categoria, setCategoria] = useState('');
+  const [inicio, setInicio] = useState('');
+  const [fim, setFim] = useState('');
+  const [valorConferido, setValorConferido] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [cancelando, setCancelando] = useState(false);
-
-  useEffect(() => {
-    carregar();
-  }, [filtroStatus]);
 
   const carregar = async () => {
     setCarregando(true);
     try {
-      const url = filtroStatus === 'todos' 
-        ? '/orders' 
-        : `/orders?status=${filtroStatus}`;
+      const params = new URLSearchParams();
+      if (filtroStatus !== 'todos') params.set('status', filtroStatus);
+      if (categoria) params.set('categoria', categoria);
+      if (inicio && fim) { params.set('inicio', inicio); params.set('fim', fim); }
+      const url = `/orders${params.toString() ? `?${params.toString()}` : ''}`;
       const res = await api.get(url);
       setPedidos(res.data || []);
     } catch (err) {
@@ -27,6 +29,12 @@ export default function Orders() {
       setCarregando(false);
     }
   };
+
+  // O histórico recarrega quando qualquer filtro muda.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    carregar();
+  }, [filtroStatus, categoria, inicio, fim]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ✅ Função de cancelamento - AJUSTADA PARA SUA ROTA
   const cancelarPedido = async (pedidoId) => {
@@ -73,6 +81,15 @@ export default function Orders() {
     return soma;
   }, [pedidos]);
 
+  const vendasPorCategoria = useMemo(() => pedidos.reduce((resumo, pedido) => {
+    (pedido.itens || []).forEach(item => {
+      const nome = item.categoria || 'Sem categoria';
+      resumo[nome] = (resumo[nome] || 0) + Number(item.precoUnitario || 0) * Number(item.pesoKg || item.quantidade || 0);
+    });
+    return resumo;
+  }, {}), [pedidos]);
+  const diferencaCaixa = valorConferido === '' ? null : Number(valorConferido) - totalVendido;
+
   const getStatusInfo = (status) => {
     const map = {
       pendente: { cor: '#f59e0b', texto: '⏳ PENDENTE' },
@@ -113,6 +130,15 @@ export default function Orders() {
             {item.label}
           </button>
         ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+        <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>De <input type="date" value={inicio} onChange={e => setInicio(e.target.value)} /></label>
+        <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Até <input type="date" value={fim} onChange={e => setFim(e.target.value)} /></label>
+        <select value={categoria} onChange={e => setCategoria(e.target.value)} style={{ padding: '7px 10px', borderRadius: 8 }}>
+          <option value="">Todas as categorias</option>
+          {['Frios', 'Padaria', 'Hortifruti', 'Açougue', 'Bebidas', 'Limpeza', 'Mercearia'].map(item => <option key={item} value={item}>{item}</option>)}
+        </select>
       </div>
 
       <div style={{ background: '#fff', border: '1px solid rgba(15,23,42,.08)', borderRadius: 16, padding: 16 }}>
@@ -188,6 +214,22 @@ export default function Orders() {
             </table>
           </div>
         )}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 16 }}>
+        {Object.entries(vendasPorCategoria).map(([nome, valor]) => (
+          <div key={nome} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 14 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{nome}</div>
+            <strong style={{ display: 'block', marginTop: 5, color: 'var(--accent-primary)' }}>R$ {valor.toFixed(2).replace('.', ',')}</strong>
+          </div>
+        ))}
+        <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 14 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Conferência de caixa</div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 7 }}>
+            <input type="number" step="0.01" min="0" placeholder="Valor contado" value={valorConferido} onChange={e => setValorConferido(e.target.value)} style={{ width: '100%', minWidth: 0 }} />
+          </div>
+          {diferencaCaixa !== null && <small style={{ color: Math.abs(diferencaCaixa) < 0.01 ? 'var(--success-bg)' : 'var(--error-bg)' }}>{Math.abs(diferencaCaixa) < 0.01 ? 'Caixa conferido' : `Diferença: R$ ${diferencaCaixa.toFixed(2).replace('.', ',')}`}</small>}
+        </div>
       </div>
 
       {/* Modal Detalhes */}

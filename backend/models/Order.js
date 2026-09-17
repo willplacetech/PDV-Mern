@@ -4,8 +4,11 @@ const itemSchema = new mongoose.Schema({
   produtoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
   codigo: String,
   nome: String,
+  categoria: String,
   precoUnitario: { type: Number, required: true },
-  quantidade: { type: Number, required: true, min: 1, validate: Number.isInteger }
+  quantidade: { type: Number, min: 1, validate: Number.isInteger },
+  pesoKg: { type: Number, min: 0.001 },
+  tipo: { type: String, enum: ['unidade', 'peso'], default: 'unidade' },
 });
 
 const pagamentoSchema = new mongoose.Schema({

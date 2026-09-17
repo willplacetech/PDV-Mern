@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const Customer = require('../models/Customer');
 
 const limparDocumento = (valor) => String(valor || '').replace(/\D/g, '');
+const normalizarEndereco = valor => valor && typeof valor === 'object' ? valor : String(valor || '').trim();
 const validarDocumento = (valor) => {
   const digitos = limparDocumento(valor);
   if (![11, 14].includes(digitos.length) || /^(\d)\1+$/.test(digitos)) return false;
@@ -63,7 +64,7 @@ router.post(
     }
 
     try {
-      const { nome, telefone, endereco, documento, tipoDocumento } = req.body;
+      const { nome, telefone, endereco, email, documento, tipoDocumento } = req.body;
       const documentoLimpo = limparDocumento(documento);
       if (!validarDocumento(documentoLimpo)) {
         return res.status(400).json({ msg: 'CPF/CNPJ inválido. Verifique os dígitos.' });
@@ -72,7 +73,8 @@ router.post(
       const customer = new Customer({
         nome: nome.trim(),
         telefone: telefone ? telefone.trim() : '',
-        endereco: endereco ? endereco.trim() : '',
+        endereco: normalizarEndereco(endereco),
+        email: email ? email.trim() : '',
         documento: documentoLimpo,
         tipoDocumento: tipoDocumento || (documentoLimpo.length === 14 ? 'CNPJ' : 'CPF'),
         createdBy: req.user.id,
@@ -92,12 +94,13 @@ router.post(
 // @access  Privado
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { nome, telefone, endereco, documento, tipoDocumento } = req.body;
+    const { nome, telefone, endereco, email, documento, tipoDocumento } = req.body;
 
     const updateFields = {};
     if (nome) updateFields.nome = nome.trim();
     if (telefone !== undefined) updateFields.telefone = telefone.trim();
-    if (endereco !== undefined) updateFields.endereco = endereco.trim();
+    if (endereco !== undefined) updateFields.endereco = normalizarEndereco(endereco);
+    if (email !== undefined) updateFields.email = email.trim();
     if (documento !== undefined) {
       const documentoLimpo = limparDocumento(documento);
       if (!validarDocumento(documentoLimpo)) {

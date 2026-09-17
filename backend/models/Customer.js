@@ -11,8 +11,13 @@ const CustomerSchema = new mongoose.Schema({
     trim: true,
   },
   endereco: {
+    type: mongoose.Schema.Types.Mixed,
+    default: '',
+  },
+  email: {
     type: String,
     trim: true,
+    lowercase: true,
   },
   documento: {
     type: String,

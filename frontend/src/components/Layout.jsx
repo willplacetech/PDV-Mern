@@ -120,8 +120,8 @@ export default function Layout() {
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22
           }}>🛒</div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)' }}>PDV Mercado</div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Sistema de Vendas</div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)' }}>Mercado Nascimento</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Qualidade e confiança na sua porta</div>
           </div>
         </div>
 

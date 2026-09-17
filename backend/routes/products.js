@@ -65,6 +65,9 @@ router.post(
     body('nome', 'Nome é obrigatório').not().isEmpty(),
     body('preco', 'Preço deve ser um número positivo').isFloat({ min: 0 }),
     body('estoque', 'Estoque deve ser um número').optional().isInt({ min: 0 }),
+    body('tipo', 'Tipo de produto inválido').optional().isIn(['unidade', 'peso']),
+    body('precoVendaPorKg', 'Preço por kg deve ser um número positivo').optional().isFloat({ min: 0 }),
+    body('estoqueKg', 'Estoque em kg deve ser um número positivo').optional().isFloat({ min: 0 }),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -73,7 +76,10 @@ router.post(
     }
 
     try {
-      const { codigo, nome, categoria, preco, estoque } = req.body;
+      const { codigo, nome, categoria, preco, estoque, tipo, precoVendaPorKg, estoqueKg } = req.body;
+      if (tipo === 'peso' && (!Number.isFinite(Number(precoVendaPorKg)) || !Number.isFinite(Number(estoqueKg)))) {
+        return res.status(400).json({ msg: 'Produtos por peso precisam de preço por kg e estoque em kg' });
+      }
 
       // 🔒 SEGURANÇA: Verificar duplicidade de código
       const existingProduct = await Product.findOne({ 
@@ -90,6 +96,9 @@ router.post(
         categoria: categoria || 'Outros',
         preco: parseFloat(preco),
         estoque: parseInt(estoque) || 0,
+        tipo: tipo || 'unidade',
+        precoVendaPorKg: tipo === 'peso' ? parseFloat(precoVendaPorKg) : undefined,
+        estoqueKg: tipo === 'peso' ? parseFloat(estoqueKg) : undefined,
         createdBy: req.user.id,
       });
 
@@ -116,6 +125,9 @@ router.put(
     body('nome', 'Nome é obrigatório').optional().not().isEmpty(),
     body('preco', 'Preço deve ser positivo').optional().isFloat({ min: 0 }),
     body('estoque', 'Estoque não pode ser negativo').optional().isInt({ min: 0 }),
+    body('tipo', 'Tipo de produto inválido').optional().isIn(['unidade', 'peso']),
+    body('precoVendaPorKg', 'Preço por kg deve ser positivo').optional().isFloat({ min: 0 }),
+    body('estoqueKg', 'Estoque em kg não pode ser negativo').optional().isFloat({ min: 0 }),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -124,7 +136,7 @@ router.put(
     }
 
     try {
-      const { codigo, nome, categoria, preco, estoque } = req.body;
+      const { codigo, nome, categoria, preco, estoque, tipo, precoVendaPorKg, estoqueKg } = req.body;
 
       // 🔒 SEGURANÇA: Verificar se o código não pertence a OUTRO produto
       if (codigo) {
@@ -144,6 +156,17 @@ router.put(
       if (categoria) updateFields.categoria = categoria;
       if (preco !== undefined) updateFields.preco = parseFloat(preco);
       if (estoque !== undefined) updateFields.estoque = parseInt(estoque);
+      if (tipo !== undefined) updateFields.tipo = tipo;
+      if (precoVendaPorKg !== undefined) updateFields.precoVendaPorKg = parseFloat(precoVendaPorKg);
+      if (estoqueKg !== undefined) updateFields.estoqueKg = parseFloat(estoqueKg);
+
+      const tipoFinal = tipo || (await Product.findById(req.params.id).select('tipo')).tipo;
+      if (tipoFinal === 'peso' && (updateFields.precoVendaPorKg === undefined || updateFields.estoqueKg === undefined)) {
+        const atual = await Product.findById(req.params.id).select('precoVendaPorKg estoqueKg');
+        if (!Number.isFinite(Number(updateFields.precoVendaPorKg ?? atual?.precoVendaPorKg)) || !Number.isFinite(Number(updateFields.estoqueKg ?? atual?.estoqueKg))) {
+          return res.status(400).json({ msg: 'Produtos por peso precisam de preço por kg e estoque em kg' });
+        }
+      }
 
       const product = await Product.findByIdAndUpdate(
         req.params.id,

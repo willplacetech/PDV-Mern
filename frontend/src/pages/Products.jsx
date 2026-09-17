@@ -3,30 +3,16 @@ import api from '../services/api.jsx';
 import { useToast } from '../components/Toast.jsx';
 
 
-const categorias = ['Alimentos', 'Bebidas', 'Limpeza', 'Higiene', 'Hortifruti', 'Padaria', 'Outros'];
+const categorias = ['Frios', 'Padaria', 'Hortifruti', 'Açougue', 'Bebidas', 'Limpeza', 'Mercearia'];
 
 
 export default function Products() {
   const [produtos, setProdutos] = useState([]);
-  const [form, setForm] = useState({ codigo: '', nome: '', categoria: 'Outros', preco: '', estoque: '' });
+  const [form, setForm] = useState({ codigo: '', nome: '', categoria: 'Mercearia', tipo: 'unidade', preco: '', estoque: '', precoVendaPorKg: '', estoqueKg: '' });
   const [editing, setEditing] = useState(null);
   const [filtro, setFiltro] = useState('');
   const { showToast } = useToast();
 
-
-  useEffect(() => { carregar(); }, []);
-
-  // Gera próximo código automaticamente
-  useEffect(() => {
-    if (!editing && produtos.length > 0) {
-      gerarProximoCodigo();
-    }
-  }, [produtos, editing]);
-
-  const carregar = async () => {
-    const res = await api.get('/products');
-    setProdutos(res.data);
-  };
 
   const gerarProximoCodigo = () => {
     if (produtos.length === 0) {
@@ -39,6 +25,25 @@ export default function Products() {
     }, 0);
     setForm(prev => ({ ...prev, codigo: String(maiorCodigo + 1) }));
   };
+
+  const carregar = async () => {
+    const res = await api.get('/products');
+    setProdutos(res.data);
+    const baixos = res.data.filter(p => (p.tipo === 'peso' ? Number(p.estoqueKg || 0) : Number(p.estoque || 0)) <= 5);
+    if (baixos.length) showToast(`Atenção: ${baixos.length} produto(s) com estoque baixo.`, 'warning');
+  };
+
+  // O carregamento inicial depende do ciclo de montagem do cadastro.
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+  useEffect(() => { carregar(); }, []);
+
+  // O código automático reage à lista carregada e ao modo de edição.
+  useEffect(() => {
+    if (!editing && produtos.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      gerarProximoCodigo();
+    }
+  }, [produtos, editing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 🔒 Verifica duplicidade de CÓDIGO
   const codigoJaExiste = (codigo, idEdicao = null) => {
@@ -56,11 +61,17 @@ export default function Products() {
       return showToast('⚠️ Este código já está cadastrado! Use outro.', 'warning');
     }
 
-    const dados = { ...form, preco: parseFloat(form.preco), estoque: parseInt(form.estoque) || 0 };
+    const dados = {
+      ...form,
+      preco: form.tipo === 'unidade' ? parseFloat(form.preco) : 0,
+      estoque: form.tipo === 'unidade' ? parseInt(form.estoque) || 0 : 0,
+      precoVendaPorKg: form.tipo === 'peso' ? parseFloat(form.precoVendaPorKg) : undefined,
+      estoqueKg: form.tipo === 'peso' ? parseFloat(form.estoqueKg) : undefined,
+    };
     try {
       editing ? await api.put(`/products/${editing._id}`, dados) : await api.post('/products', dados);
       showToast(editing ? '✅ Produto atualizado!' : '✅ Produto cadastrado!', 'success');
-      setForm({ codigo: '', nome: '', categoria: 'Outros', preco: '', estoque: '' });
+      setForm({ codigo: '', nome: '', categoria: 'Mercearia', tipo: 'unidade', preco: '', estoque: '', precoVendaPorKg: '', estoqueKg: '' });
       setEditing(null);
       carregar();
     } catch (err) {
@@ -71,7 +82,7 @@ export default function Products() {
 
   const alterar = (p) => {
     setEditing(p);
-    setForm({ codigo: p.codigo, nome: p.nome, categoria: p.categoria, preco: p.preco, estoque: p.estoque });
+    setForm({ codigo: p.codigo, nome: p.nome, categoria: p.categoria, tipo: p.tipo || 'unidade', preco: p.preco, estoque: p.estoque, precoVendaPorKg: p.precoVendaPorKg || '', estoqueKg: p.estoqueKg || '' });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -86,7 +97,7 @@ export default function Products() {
 
   const cancelar = () => {
     setEditing(null);
-    setForm({ codigo: '', nome: '', categoria: 'Outros', preco: '', estoque: '' });
+    setForm({ codigo: '', nome: '', categoria: 'Mercearia', tipo: 'unidade', preco: '', estoque: '', precoVendaPorKg: '', estoqueKg: '' });
   };
 
 
@@ -141,15 +152,26 @@ export default function Products() {
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>Preço (R$) *</label>
-              <input type="number" step="0.01" min={0} placeholder="0.00" value={form.preco} required
-                onChange={e => setForm({ ...form, preco: e.target.value })}
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>Venda por</label>
+              <div style={{ display: 'flex', gap: 8, minHeight: 48, alignItems: 'center' }}>
+                {['unidade', 'peso'].map(tipo => (
+                  <label key={tipo} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'var(--text-primary)' }}>
+                    <input type="radio" name="tipoProduto" value={tipo} checked={form.tipo === tipo} onChange={e => setForm({ ...form, tipo: e.target.value })} />
+                    {tipo === 'peso' ? 'Por Peso' : 'Por Unidade'}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>{form.tipo === 'peso' ? 'Preço por kg (R$) *' : 'Preço unitário (R$) *'}</label>
+              <input type="number" step="0.01" min={0} placeholder="0,00" value={form.tipo === 'peso' ? form.precoVendaPorKg : form.preco} required
+                onChange={e => setForm({ ...form, [form.tipo === 'peso' ? 'precoVendaPorKg' : 'preco']: e.target.value })}
                 style={inputStyle} />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>Estoque</label>
-              <input type="number" min={0} placeholder="0" value={form.estoque}
-                onChange={e => setForm({ ...form, estoque: e.target.value })}
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>{form.tipo === 'peso' ? 'Estoque em kg *' : 'Estoque'}</label>
+              <input type="number" step={form.tipo === 'peso' ? '0.001' : '1'} min={0} placeholder="0" value={form.tipo === 'peso' ? form.estoqueKg : form.estoque}
+                onChange={e => setForm({ ...form, [form.tipo === 'peso' ? 'estoqueKg' : 'estoque']: e.target.value })}
                 style={inputStyle} />
             </div>
           </div>
@@ -209,8 +231,8 @@ export default function Products() {
                       padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600
                     }}>{p.categoria}</span>
                   </td>
-                  <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: 'var(--accent-primary)', fontVariantNumeric: 'tabular-nums' }}>R$ {Number(p.preco).toFixed(2).replace('.', ',')}</td>
-                  <td style={{ padding: '10px 8px', textAlign: 'center', color: p.estoque <= 5 ? 'var(--error-bg)' : 'var(--text-primary)', fontWeight: p.estoque <= 5 ? 700 : 500 }}>{p.estoque}</td>
+                  <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: 'var(--accent-primary)', fontVariantNumeric: 'tabular-nums' }}>R$ {Number(p.tipo === 'peso' ? p.precoVendaPorKg : p.preco).toFixed(2).replace('.', ',')}{p.tipo === 'peso' ? '/kg' : ''}</td>
+                  <td style={{ padding: '10px 8px', textAlign: 'center', color: (p.tipo === 'peso' ? p.estoqueKg : p.estoque) <= 5 ? 'var(--error-bg)' : 'var(--text-primary)', fontWeight: (p.tipo === 'peso' ? p.estoqueKg : p.estoque) <= 5 ? 700 : 500 }}>{p.tipo === 'peso' ? `${Number(p.estoqueKg || 0).toFixed(3)} kg` : p.estoque}</td>
                   <td style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button onClick={() => alterar(p)} style={btnTable}>Editar</button>
                     <button onClick={() => remover(p._id)} style={{ ...btnTable, background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error-bg)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>Excluir</button>
@@ -237,6 +259,9 @@ export default function Products() {
 
 
 const corCategoria = {
+  Frios: { bg: 'rgba(14,165,233,.12)', txt: '#0284c7' },
+  Açougue: { bg: 'rgba(220,38,38,.12)', txt: '#dc2626' },
+  Mercearia: { bg: 'rgba(124,58,237,.12)', txt: '#7c3aed' },
   Alimentos: { bg: 'rgba(234,88,12,.12)', txt: '#ea580c' },
   Bebidas: { bg: 'rgba(37,99,171,.12)', txt: '#2563ab' },
   Limpeza: { bg: 'rgba(13,148,136,.12)', txt: '#0d9488' },
