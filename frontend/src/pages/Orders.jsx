@@ -241,7 +241,8 @@ export default function Orders() {
         }} className="modal-bg">
           <div onClick={e => e.stopPropagation()} style={{
             background: '#fff', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: 500,
-            maxHeight: '85vh', overflowY: 'auto', padding: 24
+            maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', padding: 24,
+            boxSizing: 'border-box'
           }} className="modal-inner">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div>
