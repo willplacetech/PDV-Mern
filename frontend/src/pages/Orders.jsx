@@ -38,7 +38,7 @@ export default function Orders() {
 
   // ✅ Função de cancelamento - AJUSTADA PARA SUA ROTA
   const cancelarPedido = async (pedidoId) => {
-    if (!window.confirm('Tem certeza que deseja cancelar este pedido? O estoque será devolvido automaticamente.')) {
+    if (!window.confirm('Tem certeza que deseja cancelar este pedido?')) {
       return;
     }
 
@@ -46,7 +46,7 @@ export default function Orders() {
     try {
       // ✅ Rota correta: /orders/:id/cancelar
       await api.patch(`/orders/${pedidoId}/cancelar`);
-      alert('✅ Pedido cancelado com sucesso! Estoque devolvido.');
+      alert('✅ Pedido cancelado com sucesso!');
       setSelecionado(null);
       carregar(); // Recarrega a lista para atualizar o status
     } catch (err) {

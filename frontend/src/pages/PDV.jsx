@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import api from '../services/api.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { enfileirarVenda, sincronizarVendas } from '../services/offlineSales.js';
+import { enviarMensagemWhatsApp } from '../services/whatsapp.js';
 
 
 const corCategoria = {
@@ -196,7 +197,7 @@ export default function PDV() {
         </style>
       </head>
       <body>
-        <div class="center bold" style="font-size:14px;">PDV MERCADO LOCAL</div>
+        <div class="center bold" style="font-size:14px;">Mercado Nascimento</div>
         <div class="center" style="font-size:10px;">Cupom Não Fiscal</div>
         <div class="linha-dupla"></div>
         
@@ -253,8 +254,9 @@ export default function PDV() {
     const itensTexto = pedido.itens.map(item => 
       `• ${item.nome}\n  ${item.tipo === 'peso' ? `${formatarPeso(item.pesoKg)} kg x R$ ${formatarMoeda(item.precoUnitario)}/kg` : `${item.quantidade} x R$ ${formatarMoeda(item.precoUnitario)}`} = R$ ${formatarMoeda((item.tipo === 'peso' ? item.pesoKg : item.quantidade) * item.precoUnitario)}`
     ).join('\n');
-    const texto = encodeURIComponent(
-`🛒 *PEDIDO* #${pedido.numero}
+    const texto =
+  `🛒 *Mercado Nascimento*
+  *PEDIDO* #${pedido.numero}
 📅 ${data}
 👤 Cliente: ${pedido.clienteNome}
 💼 Atendente: ${pedido.atendente}
@@ -266,13 +268,9 @@ ${itensTexto}
 ${pedido.desconto > 0 ? `🎁 Desconto: -R$ ${pedido.desconto.toFixed(2).replace('.',',')}\n` : ''}
 💵 *TOTAL: R$ ${pedido.total.toFixed(2).replace('.',',')}*
 Obrigado pela preferência! 🙏`
-    );
+    ;
     const telefone = pedido.clienteTelefone ? pedido.clienteTelefone.replace(/\D/g, '') : '';
-    const url = telefone 
-      ? `https://wa.me/55${telefone}?text=${texto}`
-      : `https://wa.me/?text=${texto}`;
-    
-    window.open(url, '_blank');
+    enviarMensagemWhatsApp(texto, telefone);
   };
 
 

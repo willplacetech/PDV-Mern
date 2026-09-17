@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../services/api.jsx';
 import { useToast } from '../components/Toast.jsx';
+import { enviarMensagemWhatsApp } from '../services/whatsapp.js';
 
 
 const statusCor = {
@@ -245,7 +246,7 @@ export default function ContasReceber() {
       </head>
       <body>
         <div class="center bold" style="font-size:16px;">COMPROVANTE DE QUITAÇÃO</div>
-        <div class="center">PDV Mercado Local</div>
+        <div class="center">Mercado Nascimento</div>
         <div class="linha"></div>
         <div><span class="bold">Pedido:</span> #${pedido.numero}</div>
         <div><span class="bold">Cliente:</span> ${pedido.clienteNome}</div>
@@ -303,7 +304,7 @@ export default function ContasReceber() {
         </style>
       </head>
       <body>
-        <div class="center bold" style="font-size:14px;">PDV MERCADO LOCAL</div>
+        <div class="center bold" style="font-size:14px;">Mercado Nascimento</div>
         <div class="center" style="font-size:10px; color:#c2410c; font-weight:bold;">
           ${pedido.status === 'pendente' ? 'PEDIDO PENDENTE' : 'PAGAMENTO PARCIAL'}
         </div>
@@ -367,8 +368,9 @@ export default function ContasReceber() {
         ? '💰 *PAGAMENTO PARCIAL*' 
         : '⏳ *PENDENTE*';
 
-    const texto = encodeURIComponent(
-`${pedido.status === 'pago' ? '✅' : pedido.status === 'parcial' ? '💰' : '⏳'} *PEDIDO #${pedido.numero}*
+    const texto =
+  `${pedido.status === 'pago' ? '✅' : pedido.status === 'parcial' ? '💰' : '⏳'} *Mercado Nascimento*
+  *PEDIDO #${pedido.numero}*
 ${statusTexto}
 📅 ${data}
 👤 Cliente: ${pedido.clienteNome}
@@ -382,14 +384,10 @@ ${itensTexto}
 ${totalPago > 0 ? `💵 Já Pago: R$ ${totalPago.toFixed(2).replace('.',',')}\n` : ''}
 ${falta > 0 ? `🔴 *FALTA: R$ ${falta.toFixed(2).replace('.',',')}*\n` : ''}
 Obrigado! 🙏`
-    );
+  ;
 
     const telefone = pedido.clienteTelefone ? pedido.clienteTelefone.replace(/\D/g, '') : '';
-    const url = telefone 
-      ? `https://wa.me/55${telefone}?text=${texto}`
-      : `https://wa.me/?text=${texto}`;
-    
-    window.open(url, '_blank');
+    enviarMensagemWhatsApp(texto, telefone);
   };
 
 
