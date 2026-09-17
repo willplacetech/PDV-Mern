@@ -1,5 +1,5 @@
 import { useContext, useState } from 'react';
-import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { ThemeContext } from '../context/ThemeContext.jsx';
 
@@ -7,11 +7,15 @@ import { ThemeContext } from '../context/ThemeContext.jsx';
 export default function Layout() {
   const { user, logout } = useContext(AuthContext);
   const { isDark, toggleTheme } = useContext(ThemeContext);
-  const navigate = useNavigate();
   const location = useLocation();
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const sair = () => { logout(); navigate('/login'); };
+  const sair = () => {
+    logout();
+    localStorage.clear();
+    window.history.replaceState(null, '', '/login');
+    window.location.reload();
+  };
 
   // ✅ Verificações de rota — UMA POR UMA, sem função
   const ativoPDV = location.pathname.startsWith('/pdv');
