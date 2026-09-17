@@ -9,7 +9,7 @@ const router = express.Router();
 
 
 // ==========================================
-// ✅ CRIAR PEDIDO - AGORA DIMINUI ESTOQUE!
+// ✅ CRIAR PEDIDO
 // ==========================================
 router.post('/', auth, async (req, res) => {
   const session = await mongoose.startSession();
@@ -60,23 +60,6 @@ router.post('/', auth, async (req, res) => {
     const desconto = Number(req.body.desconto || 0);
     if (!Number.isFinite(desconto) || desconto < 0 || desconto > subtotal) {
       throw new Error('Desconto inválido');
-    }
-
-    for (const [produtoId, quantidade] of quantidades) {
-      const atualizado = await Product.findOneAndUpdate(
-        { _id: produtoId, estoque: { $gte: quantidade } },
-        { $inc: { estoque: -quantidade } },
-        { new: true, session }
-      );
-      if (!atualizado) throw new Error(`Estoque insuficiente para "${produtosPorId.get(produtoId)?.nome || produtoId}"`);
-    }
-    for (const [produtoId, pesoKg] of pesos) {
-      const atualizado = await Product.findOneAndUpdate(
-        { _id: produtoId, estoqueKg: { $gte: pesoKg } },
-        { $inc: { estoqueKg: -pesoKg } },
-        { new: true, session }
-      );
-      if (!atualizado) throw new Error(`Estoque insuficiente para "${produtosPorId.get(produtoId)?.nome || produtoId}"`);
     }
 
     const pedido = new Order({
@@ -205,7 +188,7 @@ router.patch('/:id/quitar', auth, async (req, res) => {
 
 
 // ==========================================
-// ✅ CANCELAR - AGORA DEVOLVE ESTOQUE!
+// ✅ CANCELAR PEDIDO
 // ==========================================
 router.patch('/:id/cancelar', auth, async (req, res) => {
   try {
@@ -214,15 +197,6 @@ router.patch('/:id/cancelar', auth, async (req, res) => {
 
     if (!['pendente', 'parcial'].includes(pedido.status)) {
       return res.status(400).json({ msg: 'Somente pedidos pendentes ou parciais podem ser cancelados' });
-    }
-
-    // ✅ Devolver o estoque de cada item
-    for (const item of pedido.itens) {
-      await Product.findByIdAndUpdate(
-        item.produtoId,
-        item.tipo === 'peso' ? { $inc: { estoqueKg: item.pesoKg } } : { $inc: { estoque: item.quantidade } },
-        { new: true }
-      );
     }
 
     pedido.status = 'cancelado';

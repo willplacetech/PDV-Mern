@@ -67,15 +67,11 @@ export default function PDV() {
 
 
   const adicionarItem = (prod) => {
-    const estoqueDisponivel = prod.tipo === 'peso' ? Number(prod.estoqueKg || 0) : Number(prod.estoque || 0);
-    if (estoqueDisponivel <= 0) return showToast('Produto sem estoque!', 'error');
     const existe = carrinho.find(i => i.produtoId === prod._id);
     if (existe) {
       if (prod.tipo === 'peso') {
-        if (existe.pesoKg + 0.1 > estoqueDisponivel) return showToast('Estoque máximo atingido!', 'warning');
         setCarrinho(carrinho.map(i => i.produtoId === prod._id ? { ...i, pesoKg: i.pesoKg + 0.1 } : i));
       } else {
-        if (existe.quantidade >= estoqueDisponivel) return showToast('Estoque máximo atingido!', 'warning');
         setCarrinho(carrinho.map(i => i.produtoId === prod._id ? { ...i, quantidade: i.quantidade + 1 } : i));
       }
     } else {
@@ -91,21 +87,17 @@ export default function PDV() {
 
   const alterarQtd = (idx, qtd) => {
     const novos = [...carrinho];
-    const prod = produtos.find(p => p._id === novos[idx].produtoId);
     if (qtd < 1) return removerItem(idx);
-    if (qtd > prod.estoque) return showToast(`Máximo: ${prod.estoque}`, 'warning');
     novos[idx].quantidade = qtd;
     setCarrinho(novos);
   };
 
   const alterarPeso = (idx, valor) => {
     const pesoKg = converterPesoKg(valor);
-    const prod = produtos.find(p => p._id === carrinho[idx].produtoId);
     if (!Number.isFinite(pesoKg) || pesoKg <= 0) {
       setCarrinho(carrinho.map((item, itemIdx) => itemIdx === idx ? { ...item, pesoInput: valor } : item));
       return;
     }
-    if (pesoKg > Number(prod?.estoqueKg || 0)) return showToast(`Máximo: ${formatarPeso(prod.estoqueKg)} kg`, 'warning');
     setCarrinho(carrinho.map((item, itemIdx) => itemIdx === idx ? { ...item, pesoKg, pesoInput: valor } : item));
   };
 
@@ -364,15 +356,12 @@ Obrigado pela preferência! 🙏`
               }}>
                 {filtrados.map(p => {
                   const cat = corCategoria[p.categoria] || corCategoria.Outros;
-                  const estoqueDisponivel = p.tipo === 'peso' ? Number(p.estoqueKg || 0) : Number(p.estoque || 0);
-                  const semEstoque = estoqueDisponivel <= 0;
-                  const estoqueBaixo = estoqueDisponivel > 0 && estoqueDisponivel <= 5;
                   return (
                     <div key={p._id} onClick={() => adicionarItem(p)} style={{
-                      background: 'var(--bg-secondary)', border: `1.5px solid ${semEstoque ? 'var(--border-light)' : cat.border}`,
-                      borderRadius: 14, padding: 12, cursor: semEstoque ? 'not-allowed' : 'pointer',
+                      background: 'var(--bg-secondary)', border: `1.5px solid ${cat.border}`,
+                      borderRadius: 14, padding: 12, cursor: 'pointer',
                       display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                      minHeight: 120, opacity: semEstoque ? 0.5 : 1, transition: 'all .15s',
+                      minHeight: 120, transition: 'all .15s',
                       position: 'relative', overflow: 'hidden'
                     }} className="product-card">
                       <div>
@@ -386,20 +375,10 @@ Obrigado pela preferência! 🙏`
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 6 }}>
                         <div style={{
-                          fontSize: 10, fontWeight: estoqueBaixo ? 700 : 500,
-                          color: estoqueBaixo ? 'var(--error-bg)' : 'var(--text-secondary)'
-                        }}>Est: {p.tipo === 'peso' ? `${formatarPeso(p.estoqueKg)} kg` : p.estoque}</div>
-                        <div style={{
-                          fontWeight: 700, fontSize: 16, color: semEstoque ? 'var(--text-tertiary)' : 'var(--accent-primary)',
+                          fontWeight: 700, fontSize: 16, color: 'var(--accent-primary)',
                           fontVariantNumeric: 'tabular-nums'
                         }}>R$ {formatarMoeda(p.tipo === 'peso' ? p.precoVendaPorKg : p.preco)}{p.tipo === 'peso' ? '/kg' : ''}</div>
                       </div>
-                      {semEstoque && (
-                        <div style={{
-                          position: 'absolute', top: 6, right: 6, background: 'rgba(239, 68, 68, 0.1)',
-                          color: 'var(--error-bg)', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 8
-                        }}>SEM ESTOQUE</div>
-                      )}
                     </div>
                   );
                 })}
@@ -434,7 +413,6 @@ Obrigado pela preferência! 🙏`
               <>
                 <div style={{ maxHeight: 320, overflowY: 'auto', marginBottom: 14, paddingRight: 4 }}>
                   {carrinho.map((item, i) => {
-                    const prod = produtos.find(p => p._id === item.produtoId);
                     return (
                       <div key={i} style={{
                         padding: '10px 0', borderBottom: '1px solid var(--border-light)'
@@ -443,7 +421,7 @@ Obrigado pela preferência! 🙏`
                           <div style={{ flex: 1, paddingRight: 8 }}>
                             <div style={{ fontWeight: 700, fontSize: 13, lineHeight: 1.3, color: 'var(--text-primary)' }}>{item.nome}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
-                              Cod: {item.codigo} | Disp: {item.tipo === 'peso' ? `${formatarPeso(prod?.estoqueKg)} kg` : (prod?.estoque ?? '-')}
+                              Cod: {item.codigo}
                             </div>
                           </div>
                           <button onClick={() => removerItem(i)} style={{

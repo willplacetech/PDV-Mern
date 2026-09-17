@@ -77,8 +77,8 @@ router.post(
 
     try {
       const { codigo, nome, categoria, preco, estoque, tipo, precoVendaPorKg, estoqueKg } = req.body;
-      if (tipo === 'peso' && (!Number.isFinite(Number(precoVendaPorKg)) || !Number.isFinite(Number(estoqueKg)))) {
-        return res.status(400).json({ msg: 'Produtos por peso precisam de preço por kg e estoque em kg' });
+      if (tipo === 'peso' && !Number.isFinite(Number(precoVendaPorKg))) {
+        return res.status(400).json({ msg: 'Produtos por peso precisam de preço por kg' });
       }
 
       // 🔒 SEGURANÇA: Verificar duplicidade de código
@@ -95,10 +95,8 @@ router.post(
         nome: nome.trim(),
         categoria: categoria || 'Outros',
         preco: parseFloat(preco),
-        estoque: parseInt(estoque) || 0,
         tipo: tipo || 'unidade',
         precoVendaPorKg: tipo === 'peso' ? parseFloat(precoVendaPorKg) : undefined,
-        estoqueKg: tipo === 'peso' ? parseFloat(estoqueKg) : undefined,
         createdBy: req.user.id,
       });
 
@@ -161,10 +159,10 @@ router.put(
       if (estoqueKg !== undefined) updateFields.estoqueKg = parseFloat(estoqueKg);
 
       const tipoFinal = tipo || (await Product.findById(req.params.id).select('tipo')).tipo;
-      if (tipoFinal === 'peso' && (updateFields.precoVendaPorKg === undefined || updateFields.estoqueKg === undefined)) {
-        const atual = await Product.findById(req.params.id).select('precoVendaPorKg estoqueKg');
-        if (!Number.isFinite(Number(updateFields.precoVendaPorKg ?? atual?.precoVendaPorKg)) || !Number.isFinite(Number(updateFields.estoqueKg ?? atual?.estoqueKg))) {
-          return res.status(400).json({ msg: 'Produtos por peso precisam de preço por kg e estoque em kg' });
+      if (tipoFinal === 'peso' && updateFields.precoVendaPorKg === undefined) {
+        const atual = await Product.findById(req.params.id).select('precoVendaPorKg');
+        if (!Number.isFinite(Number(atual?.precoVendaPorKg))) {
+          return res.status(400).json({ msg: 'Produtos por peso precisam de preço por kg' });
         }
       }
 

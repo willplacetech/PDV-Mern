@@ -8,7 +8,7 @@ const categorias = ['Frios', 'Padaria', 'Hortifruti', 'Açougue', 'Bebidas', 'Li
 
 export default function Products() {
   const [produtos, setProdutos] = useState([]);
-  const [form, setForm] = useState({ codigo: '', nome: '', categoria: 'Mercearia', tipo: 'unidade', preco: '', estoque: '', precoVendaPorKg: '', estoqueKg: '' });
+  const [form, setForm] = useState({ codigo: '', nome: '', categoria: 'Mercearia', tipo: 'unidade', preco: '', precoVendaPorKg: '' });
   const [editing, setEditing] = useState(null);
   const [filtro, setFiltro] = useState('');
   const { showToast } = useToast();
@@ -29,8 +29,6 @@ export default function Products() {
   const carregar = async () => {
     const res = await api.get('/products');
     setProdutos(res.data);
-    const baixos = res.data.filter(p => (p.tipo === 'peso' ? Number(p.estoqueKg || 0) : Number(p.estoque || 0)) <= 5);
-    if (baixos.length) showToast(`Atenção: ${baixos.length} produto(s) com estoque baixo.`, 'warning');
   };
 
   // O carregamento inicial depende do ciclo de montagem do cadastro.
@@ -64,14 +62,12 @@ export default function Products() {
     const dados = {
       ...form,
       preco: form.tipo === 'unidade' ? parseFloat(form.preco) : 0,
-      estoque: form.tipo === 'unidade' ? parseInt(form.estoque) || 0 : 0,
       precoVendaPorKg: form.tipo === 'peso' ? parseFloat(form.precoVendaPorKg) : undefined,
-      estoqueKg: form.tipo === 'peso' ? parseFloat(form.estoqueKg) : undefined,
     };
     try {
       editing ? await api.put(`/products/${editing._id}`, dados) : await api.post('/products', dados);
       showToast(editing ? '✅ Produto atualizado!' : '✅ Produto cadastrado!', 'success');
-      setForm({ codigo: '', nome: '', categoria: 'Mercearia', tipo: 'unidade', preco: '', estoque: '', precoVendaPorKg: '', estoqueKg: '' });
+      setForm({ codigo: '', nome: '', categoria: 'Mercearia', tipo: 'unidade', preco: '', precoVendaPorKg: '' });
       setEditing(null);
       carregar();
     } catch (err) {
@@ -82,7 +78,7 @@ export default function Products() {
 
   const alterar = (p) => {
     setEditing(p);
-    setForm({ codigo: p.codigo, nome: p.nome, categoria: p.categoria, tipo: p.tipo || 'unidade', preco: p.preco, estoque: p.estoque, precoVendaPorKg: p.precoVendaPorKg || '', estoqueKg: p.estoqueKg || '' });
+    setForm({ codigo: p.codigo, nome: p.nome, categoria: p.categoria, tipo: p.tipo || 'unidade', preco: p.preco, precoVendaPorKg: p.precoVendaPorKg || '' });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -97,7 +93,7 @@ export default function Products() {
 
   const cancelar = () => {
     setEditing(null);
-    setForm({ codigo: '', nome: '', categoria: 'Mercearia', tipo: 'unidade', preco: '', estoque: '', precoVendaPorKg: '', estoqueKg: '' });
+    setForm({ codigo: '', nome: '', categoria: 'Mercearia', tipo: 'unidade', preco: '', precoVendaPorKg: '' });
   };
 
 
@@ -168,12 +164,6 @@ export default function Products() {
                 onChange={e => setForm({ ...form, [form.tipo === 'peso' ? 'precoVendaPorKg' : 'preco']: e.target.value })}
                 style={inputStyle} />
             </div>
-            <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 5, display: 'block' }}>{form.tipo === 'peso' ? 'Estoque em kg *' : 'Estoque'}</label>
-              <input type="number" step={form.tipo === 'peso' ? '0.001' : '1'} min={0} placeholder="0" value={form.tipo === 'peso' ? form.estoqueKg : form.estoque}
-                onChange={e => setForm({ ...form, [form.tipo === 'peso' ? 'estoqueKg' : 'estoque']: e.target.value })}
-                style={inputStyle} />
-            </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
             <button type="submit" style={{
@@ -212,14 +202,14 @@ export default function Products() {
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 500 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                {['Código', 'Nome', 'Categoria', 'Preço', 'Estoque', 'Ações'].map(h => (
+                {['Código', 'Nome', 'Categoria', 'Preço', 'Ações'].map(h => (
                   <th key={h} style={{ padding: '10px 8px', textAlign: 'left', fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtrados.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 24, color: 'var(--text-secondary)', fontSize: 13 }}>Nenhum produto cadastrado</td></tr>
+                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 24, color: 'var(--text-secondary)', fontSize: 13 }}>Nenhum produto cadastrado</td></tr>
               ) : filtrados.map(p => (
                 <tr key={p._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                   <td style={{ padding: '10px 8px', fontFamily: 'monospace', fontSize: 13 }}>{p.codigo}</td>
@@ -232,7 +222,6 @@ export default function Products() {
                     }}>{p.categoria}</span>
                   </td>
                   <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: 'var(--accent-primary)', fontVariantNumeric: 'tabular-nums' }}>R$ {Number(p.tipo === 'peso' ? p.precoVendaPorKg : p.preco).toFixed(2).replace('.', ',')}{p.tipo === 'peso' ? '/kg' : ''}</td>
-                  <td style={{ padding: '10px 8px', textAlign: 'center', color: (p.tipo === 'peso' ? p.estoqueKg : p.estoque) <= 5 ? 'var(--error-bg)' : 'var(--text-primary)', fontWeight: (p.tipo === 'peso' ? p.estoqueKg : p.estoque) <= 5 ? 700 : 500 }}>{p.tipo === 'peso' ? `${Number(p.estoqueKg || 0).toFixed(3)} kg` : p.estoque}</td>
                   <td style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button onClick={() => alterar(p)} style={btnTable}>Editar</button>
                     <button onClick={() => remover(p._id)} style={{ ...btnTable, background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error-bg)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>Excluir</button>
