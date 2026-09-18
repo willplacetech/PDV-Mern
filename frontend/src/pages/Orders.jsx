@@ -140,11 +140,11 @@ export default function Orders() {
             key={item.valor}
             onClick={() => setFiltroStatus(item.valor)}
             style={{
-              padding: '6px 14px', borderRadius: '20px', border: 'none',
+              padding: '6px 14px', borderRadius: '20px', border: '1px solid var(--border-color)',
               fontSize: '12px', fontWeight: filtroStatus === item.valor ? '700' : '500',
               cursor: 'pointer', transition: 'all 0.2s',
-              background: filtroStatus === item.valor ? '#ea580c' : '#f1f5f9',
-              color: filtroStatus === item.valor ? '#fff' : '#475569'
+              background: filtroStatus === item.valor ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+              color: filtroStatus === item.valor ? '#fff' : 'var(--text-primary)'
             }}
           >
             {item.label}
@@ -161,19 +161,19 @@ export default function Orders() {
         </select>
       </div>
 
-      <div style={{ background: '#fff', border: '1px solid rgba(15,23,42,.08)', borderRadius: 16, padding: 16 }}>
+      <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 16, padding: 16, boxShadow: 'var(--shadow-sm)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
             Pedidos
             <span style={{ background: 'rgba(234,88,12,.14)', color: '#ea580c', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
               {pedidos.length}
             </span>
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 13, color: '#64748b' }}>Total vendido:</span>
-            <span style={{ fontWeight: 700, color: '#16a34a', fontSize: 16 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Total vendido:</span>
+            <span style={{ fontWeight: 700, color: 'var(--success-bg)', fontSize: 16 }}>
               {carregando ? (
-                <span style={{ color: '#94a3b8' }}>Carregando...</span>
+                <span style={{ color: 'var(--text-tertiary)' }}>Carregando...</span>
               ) : (
                 `R$ ${totalVendido.toFixed(2).replace('.', ',')}`
               )}
@@ -182,29 +182,29 @@ export default function Orders() {
         </div>
 
         {carregando ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
             ⏳ Carregando pedidos...
           </div>
         ) : (
           <div style={{ overflowX: 'auto', margin: '0 -16px', padding: '0 16px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 650 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 650, background: 'var(--bg-secondary)' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(15,23,42,.08)' }}>
+                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                   {['Nº', 'Data', 'Status', 'Cliente', 'Itens', 'Total', 'Ver'].map(h => (
-                    <th key={h} style={{ padding: '10px 8px', textAlign: ['Total','Ver'].includes(h) ? 'right' : 'left', fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</th>
+                    <th key={h} style={{ padding: '10px 8px', textAlign: ['Total','Ver'].includes(h) ? 'right' : 'left', fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {pedidos.length === 0 ? (
-                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: 24, color: '#64748b', fontSize: 13 }}>Nenhum pedido realizado</td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: 24, color: 'var(--text-secondary)', fontSize: 13 }}>Nenhum pedido realizado</td></tr>
                 ) : pedidos.slice(0, 100).map(p => {
                   const statusInfo = getStatusInfo(p.status);
                   const valorTotal = Number(p?.total || p?.valorTotal || p?.subtotal || 0);
                   return (
-                    <tr key={p._id} style={{ borderBottom: '1px solid rgba(15,23,42,.06)' }}>
-                      <td style={{ padding: '10px 8px', fontFamily: 'monospace', fontWeight: 700, fontSize: 13 }}>#{p.numero}</td>
-                      <td style={{ padding: '10px 8px', fontSize: 12, color: '#64748b' }}>
+                    <tr key={p._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                      <td style={{ padding: '10px 8px', fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>#{p.numero}</td>
+                      <td style={{ padding: '10px 8px', fontSize: 12, color: 'var(--text-secondary)' }}>
                         {new Date(p.createdAt).toLocaleDateString('pt-BR')} {new Date(p.createdAt).toLocaleTimeString('pt-BR').slice(0, 5)}
                       </td>
                       <td style={{ padding: '10px 8px' }}>
@@ -215,8 +215,8 @@ export default function Orders() {
                           {statusInfo.texto}
                         </span>
                       </td>
-                      <td style={{ padding: '10px 8px', fontSize: 13, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.clienteNome}</td>
-                      <td style={{ padding: '10px 8px', textAlign: 'right', fontSize: 13 }}>{p.itens?.length || 0}</td>
+                      <td style={{ padding: '10px 8px', fontSize: 13, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>{p.clienteNome}</td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right', fontSize: 13, color: 'var(--text-primary)' }}>{p.itens?.length || 0}</td>
                       <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#ea580c', fontVariantNumeric: 'tabular-nums' }}>
                         R$ {valorTotal.toFixed(2).replace('.', ',')}
                       </td>
@@ -246,55 +246,55 @@ export default function Orders() {
         <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 14 }}>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Conferência de caixa</div>
           <div style={{ display: 'flex', gap: 6, marginTop: 7 }}>
-            <input type="number" step="0.01" min="0" placeholder="Valor contado" value={valorConferido} onChange={e => setValorConferido(e.target.value)} style={{ width: '100%', minWidth: 0 }} />
+            <input type="number" step="0.01" min="0" placeholder="Valor contado" value={valorConferido} onChange={e => setValorConferido(e.target.value)} style={{ width: '100%', minWidth: 0, background: 'var(--input-bg)', color: 'var(--input-text)' }} />
           </div>
-          {diferencaCaixa !== null && <small style={{ color: Math.abs(diferencaCaixa) < 0.01 ? 'var(--success-bg)' : 'var(--error-bg)' }}>{Math.abs(diferencaCaixa) < 0.01 ? 'Caixa conferido' : `Diferença: R$ ${diferencaCaixa.toFixed(2).replace('.', ',')}`}</small>}
+          {diferencaCaixa !== null && <small style={{ color: Math.abs(diferencaCaixa) < 0.01 ? 'var(--success-bg)' : 'var(--error-bg)', display: 'block', marginTop: 8 }}>{Math.abs(diferencaCaixa) < 0.01 ? 'Caixa conferido' : `Diferença: R$ ${diferencaCaixa.toFixed(2).replace('.', ',')}`}</small>}
         </div>
       </div>
 
       {/* Modal Detalhes */}
       {selecionado && (
         <div onClick={() => setSelecionado(null)} className="modal-backdrop modal-bg" style={{ padding: 0 }}>
-          <div onClick={e => e.stopPropagation()} className="modal-panel modal-inner" style={{ padding: 24, boxSizing: 'border-box' }}>
+          <div onClick={e => e.stopPropagation()} className="modal-panel modal-inner" style={{ padding: 24, boxSizing: 'border-box', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 4px 0' }}>Pedido #{selecionado.numero}</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 4px 0', color: 'var(--text-primary)' }}>Pedido #{selecionado.numero}</h3>
                 <span style={{ fontSize: '13px', fontWeight: 600, color: getStatusInfo(selecionado.status).cor }}>
                   {getStatusInfo(selecionado.status).texto}
                 </span>
               </div>
               <button onClick={() => setSelecionado(null)} style={{
                 background: 'transparent', border: 'none', fontSize: 26,
-                color: '#64748b', cursor: 'pointer', minWidth: 44, minHeight: 44
+                color: 'var(--text-secondary)', cursor: 'pointer', minWidth: 44, minHeight: 44
               }}>×</button>
             </div>
-            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 12 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
               📅 {new Date(selecionado.createdAt).toLocaleString('pt-BR')}<br />
               👤 {selecionado.clienteNome}<br />
               💼 Atendente: {selecionado.atendente || '—'}
             </div>
-            <div style={{ borderTop: '1px solid rgba(15,23,42,.08)', paddingTop: 10, marginBottom: 10 }}>
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 10, marginBottom: 10 }}>
               {(selecionado.itens || []).map((item, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px dashed rgba(15,23,42,.08)' }}>
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px dashed var(--border-color)' }}>
                   <div style={{ paddingRight: 10 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>{item.nome}</div>
-                    <div style={{ fontSize: 12, color: '#64748b' }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>{item.nome}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                       {item.quantidade} × R$ {Number(item.precoUnitario || 0).toFixed(2).replace('.', ',')}
                     </div>
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, flexShrink: 0, color: 'var(--text-primary)' }}>
                     R$ {Number((item.quantidade || 0) * (item.precoUnitario || 0)).toFixed(2).replace('.', ',')}
                   </div>
                 </div>
               ))}
             </div>
             <div style={{ borderTop: '2px solid #ea580c', paddingTop: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#64748b', marginBottom: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: 'var(--text-secondary)', marginBottom: 4 }}>
                 <span>Subtotal</span>
                 <span>R$ {Number(selecionado.subtotal || 0).toFixed(2).replace('.', ',')}</span>
               </div>
               {(selecionado.desconto || 0) > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#16a34a', marginBottom: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: 'var(--success-bg)', marginBottom: 4 }}>
                   <span>Desconto</span>
                   <span>-R$ {Number(selecionado.desconto || 0).toFixed(2).replace('.', ',')}</span>
                 </div>
@@ -313,8 +313,8 @@ export default function Orders() {
               gap: 12,
               marginTop: 20,
               paddingTop: 16,
-              borderTop: '1px solid rgba(15,23,42,.08)',
-              background: '#fff',
+              borderTop: '1px solid var(--border-color)',
+              background: 'var(--bg-secondary)',
               boxShadow: '0 -12px 20px rgba(15, 23, 42, 0.04)'
             }}>
               <button
