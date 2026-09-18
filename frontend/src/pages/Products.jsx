@@ -166,16 +166,8 @@ export default function Products() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-            <button type="submit" style={{
-              flex: 1, padding: '12px', background: 'var(--accent-primary)', color: '#fff',
-              border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
-              cursor: 'pointer', minHeight: 46
-            }}>{editing ? 'Atualizar' : 'Cadastrar'}</button>
-            {editing && <button type="button" onClick={cancelar} style={{
-              padding: '12px 20px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)',
-              border: '1.5px solid var(--border-color)', borderRadius: 10,
-              fontSize: 14, fontWeight: 600, cursor: 'pointer', minHeight: 46
-            }}>Cancelar</button>}
+            <button type="submit" className="primary-button" style={{ flex: 1, minHeight: 46 }}>{editing ? 'Atualizar' : 'Cadastrar'}</button>
+            {editing && <button type="button" className="secondary-button" onClick={cancelar} style={{ minHeight: 46 }}>Cancelar</button>}
           </div>
         </form>
       </div>
@@ -263,13 +255,14 @@ const corCategoria = {
 
 const inputStyle = {
   width: '100%', padding: '12px 14px', border: '1.5px solid var(--border-color)',
-  borderRadius: 10, fontSize: 16, boxSizing: 'border-box',
-  outline: 'none', background: 'var(--input-bg)', color: 'var(--input-text)', minHeight: 48
+  borderRadius: 12, fontSize: 16, boxSizing: 'border-box',
+  outline: 'none', background: 'var(--input-bg)', color: 'var(--input-text)', minHeight: 48,
+  transition: 'border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease'
 };
 
 
 const btnTable = {
-  padding: '6px 12px', margin: '0 3px', background: 'var(--bg-secondary)', color: 'var(--text-primary)',
-  border: '1px solid var(--border-color)', borderRadius: 8, fontSize: 12,
-  fontWeight: 600, cursor: 'pointer', minHeight: 34
+  padding: '7px 12px', margin: '0 3px', background: 'var(--bg-secondary)', color: 'var(--text-primary)',
+  border: '1.5px solid var(--border-color)', borderRadius: 10, fontSize: 12,
+  fontWeight: 700, cursor: 'pointer', minHeight: 34
 };

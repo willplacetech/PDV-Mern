@@ -102,11 +102,7 @@ export default function Login() {
               />
             </div>
 
-            <button type="submit" disabled={loading} style={{
-              width: '100%', padding: '14px', background: 'var(--accent-primary)', color: '#fff',
-              border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 700,
-              cursor: 'pointer', transition: 'all .15s', minHeight: 52
-            }}>
+            <button type="submit" className="primary-button" disabled={loading} style={{ width: '100%', minHeight: 52 }}>
               {loading ? 'Entrando...' : 'Entrar no Sistema'}
             </button>
           </form>

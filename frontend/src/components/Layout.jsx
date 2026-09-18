@@ -17,6 +17,7 @@ export default function Layout() {
   };
 
   // ✅ Verificações de rota — UMA POR UMA, sem função
+  const ativoDashboard = location.pathname.startsWith('/dashboard');
   const ativoPDV = location.pathname.startsWith('/pdv');
   const ativoProdutos = location.pathname.startsWith('/produtos');
   const ativoClientes = location.pathname.startsWith('/clientes');
@@ -25,9 +26,13 @@ export default function Layout() {
   const ativoUsuarios = location.pathname.startsWith('/usuarios');
 
   // ✅ Título e ícone — UMA POR UMA, sem função
-  let iconePagina = '🛒';
-  let tituloPagina = 'Ponto de Venda';
+  let iconePagina = '📊';
+  let tituloPagina = 'Dashboard';
 
+  if (location.pathname.startsWith('/dashboard')) {
+    iconePagina = '📊';
+    tituloPagina = 'Dashboard';
+  }
   if (location.pathname.startsWith('/pdv')) {
     iconePagina = '🛒';
     tituloPagina = 'Ponto de Venda';
@@ -144,7 +149,12 @@ export default function Layout() {
         </button>
 
         <nav style={{ flex: 1, overflowY: 'auto' }}>
-          {/* ✅ ITEM 1 — PDV */}
+          {/* ✅ ITEM 1 — Dashboard */}
+          <Link to="/dashboard" className={ativoDashboard ? 'nav-link active' : 'nav-link'}>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>📊</span>
+            <span style={{ whiteSpace: 'nowrap' }}>Dashboard</span>
+          </Link>
+          {/* ✅ ITEM 2 — PDV */}
           <Link to="/pdv" className={ativoPDV ? 'nav-link active' : 'nav-link'}>
             <span style={{ fontSize: 18, flexShrink: 0 }}>🛒</span>
             <span style={{ whiteSpace: 'nowrap' }}>PDV</span>
@@ -213,7 +223,12 @@ export default function Layout() {
           BOTTOM NAV MOBILE — ITENS UM POR UM
           ========================================== */}
       <nav id="bottom-nav">
-        {/* ✅ ITEM 1 — PDV */}
+        {/* ✅ ITEM 1 — Dashboard */}
+        <Link to="/dashboard" className={ativoDashboard ? 'bottom-link active' : 'bottom-link'}>
+          <span style={{ fontSize: 20, lineHeight: 1 }}>📊</span>
+          <span style={{ whiteSpace: 'nowrap', fontSize: '10px' }}>Dashboard</span>
+        </Link>
+        {/* ✅ ITEM 2 — PDV */}
         <Link to="/pdv" className={ativoPDV ? 'bottom-link active' : 'bottom-link'}>
           <span style={{ fontSize: 20, lineHeight: 1 }}>🛒</span>
           <span style={{ whiteSpace: 'nowrap', fontSize: '10px' }}>PDV</span>

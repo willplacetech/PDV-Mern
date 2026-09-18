@@ -70,7 +70,7 @@ export default function Users() {
             <option value="admin">Administrador</option>
           </select>
         </label>
-        <button type="submit" disabled={loading} style={{ width: '100%', padding: 14, border: 0, borderRadius: 10, background: 'var(--accent-primary)', color: '#fff', fontWeight: 700, fontSize: 15, cursor: loading ? 'wait' : 'pointer' }}>
+        <button type="submit" className="primary-button" disabled={loading} style={{ width: '100%' }}>
           {loading ? 'Criando...' : 'Criar usuário'}
         </button>
       </form>
@@ -80,6 +80,7 @@ export default function Users() {
 
 const inputStyle = {
   display: 'block', width: '100%', marginTop: 7, padding: '12px 14px',
-  border: '1px solid var(--border-color)', borderRadius: 9, fontSize: 16,
+  border: '1.5px solid var(--border-color)', borderRadius: 12, fontSize: 16,
   boxSizing: 'border-box', background: 'var(--input-bg)', color: 'var(--input-text)',
+  minHeight: 48, transition: 'border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease'
 };

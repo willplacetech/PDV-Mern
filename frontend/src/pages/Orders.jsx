@@ -254,16 +254,8 @@ export default function Orders() {
 
       {/* Modal Detalhes */}
       {selecionado && (
-        <div onClick={() => setSelecionado(null)} style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)',
-          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-          zIndex: 100, padding: 0
-        }} className="modal-bg">
-          <div onClick={e => e.stopPropagation()} style={{
-            background: '#fff', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: 500,
-            maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', padding: 24,
-            boxSizing: 'border-box'
-          }} className="modal-inner">
+        <div onClick={() => setSelecionado(null)} className="modal-backdrop modal-bg" style={{ padding: 0 }}>
+          <div onClick={e => e.stopPropagation()} className="modal-panel modal-inner" style={{ padding: 24, boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 4px 0' }}>Pedido #{selecionado.numero}</h3>
