@@ -11,6 +11,7 @@ export default function Orders() {
   const [valorConferido, setValorConferido] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [cancelando, setCancelando] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
 
   const carregar = async () => {
     setCarregando(true);
@@ -61,6 +62,25 @@ export default function Orders() {
   // ✅ Só permite cancelar se NÃO estiver pago e NÃO já cancelado
   const podeCancelar = (status) => {
     return ['pendente', 'parcial'].includes(status);
+  };
+
+  const excluirPedido = async (pedidoId) => {
+    if (!window.confirm('Tem certeza que deseja excluir permanentemente este pedido?')) {
+      return;
+    }
+
+    setExcluindo(true);
+    try {
+      await api.delete(`/orders/${pedidoId}`);
+      alert('✅ Pedido excluído com sucesso!');
+      setSelecionado(null);
+      carregar();
+    } catch (err) {
+      console.error('Erro ao excluir pedido:', err);
+      alert(err.response?.data?.msg || '❌ Erro ao excluir pedido. Tente novamente.');
+    } finally {
+      setExcluindo(false);
+    }
   };
 
   const totalVendido = useMemo(() => {
@@ -293,9 +313,38 @@ export default function Orders() {
               </div>
             </div>
 
-            {/* ✅ BOTÃO CANCELAR — SÓ APARECE SE PENDENTE OU PARCIAL */}
-            {podeCancelar(selecionado.status) && (
-              <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(15,23,42,.08)' }}>
+            <div className="modal-actions" style={{
+              position: 'sticky',
+              bottom: 0,
+              zIndex: 2,
+              display: 'grid',
+              gap: 12,
+              marginTop: 20,
+              paddingTop: 16,
+              borderTop: '1px solid rgba(15,23,42,.08)',
+              background: '#fff',
+              boxShadow: '0 -12px 20px rgba(15, 23, 42, 0.04)'
+            }}>
+              <button
+                onClick={() => excluirPedido(selecionado._id)}
+                disabled={excluindo}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: excluindo ? '#fca5a5' : '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 10,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: excluindo ? 'not-allowed' : 'pointer',
+                  transition: 'background 0.2s'
+                }}
+              >
+                {excluindo ? '⏳ Excluindo...' : '🗑️ Excluir Pedido'}
+              </button>
+
+              {podeCancelar(selecionado.status) && (
                 <button
                   onClick={() => cancelarPedido(selecionado._id)}
                   disabled={cancelando}
@@ -314,16 +363,30 @@ export default function Orders() {
                 >
                   {cancelando ? '⏳ Cancelando...' : '❌ Cancelar Pedido'}
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}
 
       <style>{`
+        @media (max-width: 640px) {
+          .modal-bg { align-items: flex-end !important; padding: 0 !important; }
+          .modal-inner {
+            border-radius: 20px 20px 0 0 !important;
+            padding-bottom: 20px !important;
+          }
+          .modal-actions {
+            grid-template-columns: 1fr !important;
+            position: sticky !important;
+            bottom: 0 !important;
+          }
+        }
+
         @media (min-width: 640px) {
           .modal-bg { align-items: center !important; padding: 20px !important; }
           .modal-inner { border-radius: 16px !important; }
+          .modal-actions { grid-template-columns: 1fr 1fr !important; }
         }
       `}</style>
     </div>

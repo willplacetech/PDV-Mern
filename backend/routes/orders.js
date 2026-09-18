@@ -207,5 +207,19 @@ router.patch('/:id/cancelar', auth, async (req, res) => {
   }
 });
 
+// ==========================================
+// ✅ EXCLUIR PEDIDO
+// ==========================================
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const pedido = await Order.findByIdAndDelete(req.params.id);
+    if (!pedido) return res.status(404).json({ msg: 'Pedido não encontrado' });
+
+    res.json({ msg: 'Pedido excluído com sucesso' });
+  } catch (err) {
+    res.status(400).json({ msg: err.message });
+  }
+});
+
 
 module.exports = router;
