@@ -5,13 +5,13 @@ const Customer = require('../models/Customer');
 
 const router = express.Router();
 
-const formatPeriodRange = (periodo) => {
-  const agora = new Date();
-  const inicio = new Date(agora);
+const formatPeriodRange = (periodo, referencia = new Date()) => {
+  const agora = new Date(referencia);
+  const inicio = new Date(referencia);
 
   if (periodo === 'dia') {
     inicio.setHours(0, 0, 0, 0);
-    return { inicio, fim: agora };
+    return { inicio, fim: new Date(agora) };
   }
 
   if (periodo === 'semana') {
@@ -19,12 +19,44 @@ const formatPeriodRange = (periodo) => {
     const diferenca = (dia === 0 ? -6 : 1 - dia);
     inicio.setDate(agora.getDate() + diferenca);
     inicio.setHours(0, 0, 0, 0);
-    return { inicio, fim: agora };
+    return { inicio, fim: new Date(agora) };
   }
 
   inicio.setDate(1);
   inicio.setHours(0, 0, 0, 0);
-  return { inicio, fim: agora };
+  return { inicio, fim: new Date(agora) };
+};
+
+const getPreviousPeriodRange = (periodo, referencia = new Date()) => {
+  const atual = formatPeriodRange(periodo, referencia);
+
+  if (periodo === 'dia') {
+    const anteriorInicio = new Date(atual.inicio);
+    const anteriorFim = new Date(atual.inicio);
+    anteriorInicio.setDate(anteriorInicio.getDate() - 1);
+    anteriorInicio.setHours(0, 0, 0, 0);
+    anteriorFim.setDate(anteriorFim.getDate() - 1);
+    anteriorFim.setHours(23, 59, 59, 999);
+    return { inicio: anteriorInicio, fim: anteriorFim };
+  }
+
+  if (periodo === 'semana') {
+    const anteriorInicio = new Date(atual.inicio);
+    const anteriorFim = new Date(atual.inicio);
+    anteriorInicio.setDate(anteriorInicio.getDate() - 7);
+    anteriorInicio.setHours(0, 0, 0, 0);
+    anteriorFim.setDate(anteriorFim.getDate() - 1);
+    anteriorFim.setHours(23, 59, 59, 999);
+    return { inicio: anteriorInicio, fim: anteriorFim };
+  }
+
+  const anteriorInicio = new Date(atual.inicio);
+  const anteriorFim = new Date(atual.inicio);
+  anteriorInicio.setMonth(anteriorInicio.getMonth() - 1, 1);
+  anteriorInicio.setHours(0, 0, 0, 0);
+  anteriorFim.setMonth(anteriorFim.getMonth(), 0);
+  anteriorFim.setHours(23, 59, 59, 999);
+  return { inicio: anteriorInicio, fim: anteriorFim };
 };
 
 const getGrafico = (pedidos, periodo) => {
@@ -64,26 +96,139 @@ const getItensVendidos = (pedidos) => pedidos.reduce((total, pedido) => {
   return total + quantidadeItens;
 }, 0);
 
+const getResumoFechamento = (pedidos) => {
+  const statusResumo = {
+    pago: { valor: 0, count: 0 },
+    pendente: { valor: 0, count: 0 },
+    parcial: { valor: 0, count: 0 },
+    cancelado: { valor: 0, count: 0 },
+  };
+
+  const formasPagamento = {};
+  let recebimentos = 0;
+  let aReceber = 0;
+
+  pedidos.forEach((pedido) => {
+    const status = pedido.status || 'pendente';
+    const valorPedido = Number(pedido.total || 0);
+    const recebimentoPedido = (pedido.pagamentos || []).reduce((soma, pagamento) => soma + Number(pagamento.valorRecebido || 0), 0);
+
+    if (statusResumo[status]) {
+      statusResumo[status].valor += valorPedido;
+      statusResumo[status].count += 1;
+    }
+
+    recebimentos += recebimentoPedido;
+
+    if (['pendente', 'parcial'].includes(status)) {
+      aReceber += valorPedido;
+    }
+
+    (pedido.pagamentos || []).forEach((pagamento) => {
+      const tipo = pagamento.tipo || 'credito_loja';
+      formasPagamento[tipo] = (formasPagamento[tipo] || 0) + Number(pagamento.valorRecebido || 0);
+    });
+  });
+
+  const totalVendas = pedidos.reduce((soma, pedido) => soma + Number(pedido.total || 0), 0);
+  const porForma = Object.entries(formasPagamento)
+    .map(([tipo, valor]) => ({
+      tipo,
+      valor: Number(valor.toFixed(2)),
+      label: {
+        dinheiro: 'Dinheiro',
+        pix: 'Pix',
+        credito_loja: 'Crédito Loja',
+        cartao_credito: 'Cartão Crédito',
+        cartao_debito: 'Cartão Débito',
+        cheque: 'Cheque',
+      }[tipo] || tipo},
+    ))
+    .sort((a, b) => b.valor - a.valor);
+
+  return {
+    totalVendas: Number(totalVendas.toFixed(2)),
+    recebimentos: Number(recebimentos.toFixed(2)),
+    aReceber: Number(aReceber.toFixed(2)),
+    cancelado: Number((statusResumo.cancelado?.valor || 0).toFixed(2)),
+    statusResumo,
+    porForma,
+  };
+};
+
+const getRelatorioPorCliente = (pedidos) => {
+  const agrupado = new Map();
+
+  pedidos.forEach((pedido) => {
+    const chave = pedido.clienteId ? String(pedido.clienteId) : String(pedido.clienteNome || 'Cliente não identificado');
+    const nome = pedido.clienteNome || 'Cliente não identificado';
+
+    if (!agrupado.has(chave)) {
+      agrupado.set(chave, {
+        nome,
+        total: 0,
+        pedidos: 0,
+      });
+    }
+
+    const cliente = agrupado.get(chave);
+    cliente.total += Number(pedido.total || 0);
+    cliente.pedidos += 1;
+  });
+
+  return Array.from(agrupado.values())
+    .map((cliente) => ({
+      ...cliente,
+      total: Number(cliente.total.toFixed(2)),
+      ticketMedio: Number((cliente.total / (cliente.pedidos || 1)).toFixed(2)),
+    }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8);
+};
+
+const getComparativoPeriodo = (pedidosAtuais, pedidosAnteriores) => {
+  const atual = pedidosAtuais.reduce((soma, pedido) => soma + Number(pedido.total || 0), 0);
+  const anterior = pedidosAnteriores.reduce((soma, pedido) => soma + Number(pedido.total || 0), 0);
+  const variacao = atual - anterior;
+  const percentual = anterior > 0 ? (variacao / anterior) * 100 : 0;
+
+  return {
+    atual: Number(atual.toFixed(2)),
+    anterior: Number(anterior.toFixed(2)),
+    variacao: Number(variacao.toFixed(2)),
+    percentual: Number(percentual.toFixed(1)),
+  };
+};
+
+const buildQuery = ({ inicio, fim, clienteId, statusFiltro }) => {
+  const query = {
+    createdAt: { $gte: inicio, $lte: fim },
+  };
+
+  if (clienteId) {
+    query.clienteId = clienteId;
+  }
+
+  if (statusFiltro && statusFiltro !== 'todos') {
+    query.status = statusFiltro === 'pendente' ? { $in: ['pendente', 'parcial'] } : statusFiltro;
+  }
+
+  return query;
+};
+
 router.get('/', auth, async (req, res) => {
   try {
     const periodo = ['dia', 'semana', 'mes'].includes(req.query.periodo) ? req.query.periodo : 'semana';
     const clienteId = req.query.cliente || '';
     const statusFiltro = req.query.status || '';
-
     const { inicio, fim } = formatPeriodRange(periodo);
-    const query = {
-      createdAt: { $gte: inicio, $lte: fim },
-    };
+    const { inicio: inicioAnterior, fim: fimAnterior } = getPreviousPeriodRange(periodo);
 
-    if (clienteId) {
-      query.clienteId = clienteId;
-    }
-
-    if (statusFiltro && statusFiltro !== 'todos') {
-      query.status = statusFiltro === 'pendente' ? { $in: ['pendente', 'parcial'] } : statusFiltro;
-    }
+    const query = buildQuery({ inicio, fim, clienteId, statusFiltro });
+    const queryAnterior = buildQuery({ inicio: inicioAnterior, fim: fimAnterior, clienteId, statusFiltro });
 
     const pedidos = await Order.find(query).sort({ createdAt: -1 }).lean();
+    const pedidosAnterior = await Order.find(queryAnterior).sort({ createdAt: -1 }).lean();
 
     const totalVendas = pedidos.reduce((soma, pedido) => soma + (Number(pedido.total) || 0), 0);
     const pedidosCount = pedidos.length;
@@ -100,6 +245,9 @@ router.get('/', auth, async (req, res) => {
         itens: itensVendidos,
       },
       grafico: getGrafico(pedidos, periodo),
+      fechamento: getResumoFechamento(pedidos),
+      comparativo: getComparativoPeriodo(pedidos, pedidosAnterior),
+      relatorioClientes: getRelatorioPorCliente(pedidos),
       pedidos: pedidos.slice(0, 8).map((pedido) => ({
         _id: pedido._id,
         numero: pedido.numero,

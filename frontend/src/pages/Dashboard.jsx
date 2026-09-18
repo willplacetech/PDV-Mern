@@ -29,6 +29,8 @@ const formatDate = (data) =>
     minute: '2-digit',
   });
 
+const formatPercent = (valor) => `${valor >= 0 ? '+' : ''}${Number(valor || 0).toFixed(1)}%`;
+
 const getStatusMeta = (status) => {
   const map = {
     pago: { label: 'Pago', color: '#16a34a', bg: 'rgba(22, 163, 74, 0.12)' },
@@ -48,6 +50,9 @@ export default function Dashboard() {
   const [dados, setDados] = useState({
     kpis: { total: 0, pedidos: 0, ticketMedio: 0, itens: 0 },
     grafico: { labels: [], valores: [] },
+    fechamento: { totalVendas: 0, recebimentos: 0, aReceber: 0, cancelado: 0, porForma: [] },
+    comparativo: { atual: 0, anterior: 0, variacao: 0, percentual: 0 },
+    relatorioClientes: [],
     pedidos: [],
   });
   const [carregando, setCarregando] = useState(true);
@@ -75,7 +80,14 @@ export default function Dashboard() {
         if (statusFiltro && statusFiltro !== 'todos') params.set('status', statusFiltro);
 
         const { data } = await api.get(`/dashboard?${params.toString()}`);
-        setDados(data || { kpis: { total: 0, pedidos: 0, ticketMedio: 0, itens: 0 }, grafico: { labels: [], valores: [] }, pedidos: [] });
+        setDados(data || {
+          kpis: { total: 0, pedidos: 0, ticketMedio: 0, itens: 0 },
+          grafico: { labels: [], valores: [] },
+          fechamento: { totalVendas: 0, recebimentos: 0, aReceber: 0, cancelado: 0, porForma: [] },
+          comparativo: { atual: 0, anterior: 0, variacao: 0, percentual: 0 },
+          relatorioClientes: [],
+          pedidos: [],
+        });
       } catch (error) {
         console.error('Erro ao carregar dashboard:', error);
       } finally {
@@ -91,11 +103,11 @@ export default function Dashboard() {
   return (
     <div style={{ display: 'grid', gap: 18 }}>
       <header style={{ display: 'grid', gap: 8 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: 'var(--text-primary)' }}>📊 Dashboard Simplificado</h1>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>📊 Dashboard Simplificado</h1>
         <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 13 }}>PDV Mercado Nascimento</p>
       </header>
 
-      <section className="panel-card" style={{ padding: 16 }}>
+      <section className="panel-card" style={{ padding: 16, background: 'linear-gradient(180deg, rgba(39,174,96,0.05), rgba(243,156,18,0.03))' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {periodos.map((item) => (
@@ -121,7 +133,7 @@ export default function Dashboard() {
             <select
               value={clienteFiltro}
               onChange={(event) => setClienteFiltro(event.target.value)}
-              style={{ maxWidth: 220, minWidth: 160 }}
+              style={{ maxWidth: 220, minWidth: 160, background: 'var(--input-bg)' }}
             >
               <option value="">Todos os clientes</option>
               {clientes.map((cliente) => (
@@ -132,7 +144,7 @@ export default function Dashboard() {
             <select
               value={statusFiltro}
               onChange={(event) => setStatusFiltro(event.target.value)}
-              style={{ maxWidth: 170, minWidth: 150 }}
+              style={{ maxWidth: 170, minWidth: 150, background: 'var(--input-bg)' }}
             >
               {statusOptions.map((status) => (
                 <option key={status.value} value={status.value}>{status.label}</option>
@@ -149,24 +161,128 @@ export default function Dashboard() {
       ) : (
         <>
           <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
-            <div className="panel-card" style={{ padding: 16 }}>
+            <div className="panel-card" style={{ padding: 16, borderLeft: '4px solid #27ae60' }}>
               <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 8 }}>Total Vendas</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--accent-primary)' }}>{formatCurrency(dados.kpis.total)}</div>
             </div>
 
-            <div className="panel-card" style={{ padding: 16 }}>
+            <div className="panel-card" style={{ padding: 16, borderLeft: '4px solid #f39c12' }}>
               <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 8 }}>Nº Pedidos</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>{dados.kpis.pedidos}</div>
             </div>
 
-            <div className="panel-card" style={{ padding: 16 }}>
+            <div className="panel-card" style={{ padding: 16, borderLeft: '4px solid #f59e0b' }}>
               <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 8 }}>Ticket Médio</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: '#f39c12' }}>{formatCurrency(dados.kpis.ticketMedio)}</div>
             </div>
 
-            <div className="panel-card" style={{ padding: 16 }}>
+            <div className="panel-card" style={{ padding: 16, borderLeft: '4px solid #2c3e50' }}>
               <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 8 }}>Itens Vendidos</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>{dados.kpis.itens}</div>
+            </div>
+          </section>
+
+          <section className="panel-card" style={{ padding: 18 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>Relatório de fechamento</div>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                {periodos.find((item) => item.key === periodo)?.label || 'Período'} selecionado
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              <div className="panel-card" style={{ padding: 14, background: 'rgba(39,174,96,0.04)' }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Faturamento</div>
+                <div style={{ fontSize: 20, fontWeight: 800 }}>{formatCurrency(dados.fechamento?.totalVendas || 0)}</div>
+              </div>
+
+              <div className="panel-card" style={{ padding: 14, background: 'rgba(16,185,129,0.04)' }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Recebido</div>
+                <div style={{ fontSize: 20, fontWeight: 800 }}>{formatCurrency(dados.fechamento?.recebimentos || 0)}</div>
+              </div>
+
+              <div className="panel-card" style={{ padding: 14, background: 'rgba(245,158,11,0.04)' }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>A receber</div>
+                <div style={{ fontSize: 20, fontWeight: 800 }}>{formatCurrency(dados.fechamento?.aReceber || 0)}</div>
+              </div>
+
+              <div className="panel-card" style={{ padding: 14, background: 'rgba(220,38,38,0.04)' }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Cancelado</div>
+                <div style={{ fontSize: 20, fontWeight: 800 }}>{formatCurrency(dados.fechamento?.cancelado || 0)}</div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 16, display: 'grid', gap: 8 }}>
+              {(dados.fechamento?.porForma || []).map((forma) => (
+                <div key={forma.tipo} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: 10, background: 'var(--panel-soft)' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>{forma.label}</span>
+                  <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(forma.valor)}</strong>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="panel-card" style={{ padding: 18 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 14, color: 'var(--text-primary)' }}>Comparativo mês/mês anterior</div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              <div className="panel-card" style={{ padding: 14 }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Mês atual</div>
+                <div style={{ fontSize: 20, fontWeight: 800 }}>{formatCurrency(dados.comparativo?.atual || 0)}</div>
+              </div>
+
+              <div className="panel-card" style={{ padding: 14 }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Mês anterior</div>
+                <div style={{ fontSize: 20, fontWeight: 800 }}>{formatCurrency(dados.comparativo?.anterior || 0)}</div>
+              </div>
+
+              <div className="panel-card" style={{ padding: 14, borderLeft: `4px solid ${Number(dados.comparativo?.variacao || 0) >= 0 ? '#27ae60' : '#ef4444'}` }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Variação</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: Number(dados.comparativo?.variacao || 0) >= 0 ? '#27ae60' : '#ef4444' }}>
+                  {formatCurrency(dados.comparativo?.variacao || 0)}
+                </div>
+              </div>
+
+              <div className="panel-card" style={{ padding: 14, borderLeft: `4px solid ${Number(dados.comparativo?.percentual || 0) >= 0 ? '#27ae60' : '#ef4444'}` }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Percentual</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: Number(dados.comparativo?.percentual || 0) >= 0 ? '#27ae60' : '#ef4444' }}>
+                  {formatPercent(dados.comparativo?.percentual || 0)}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="panel-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '18px 18px 8px', fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>Relatório por cliente</div>
+            <div className="table-shell" style={{ paddingBottom: 16 }}>
+              <table className="data-table" style={{ minWidth: 620 }}>
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Pedidos</th>
+                    <th>Ticket</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(dados.relatorioClientes || []).length === 0 ? (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 24 }}>
+                        Nenhum cliente com vendas neste período
+                      </td>
+                    </tr>
+                  ) : (
+                    (dados.relatorioClientes || []).map((cliente) => (
+                      <tr key={`${cliente.nome}-${cliente.total}`}>
+                        <td>{cliente.nome}</td>
+                        <td>{cliente.pedidos}</td>
+                        <td>{formatCurrency(cliente.ticketMedio)}</td>
+                        <td style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>{formatCurrency(cliente.total)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </section>
 
