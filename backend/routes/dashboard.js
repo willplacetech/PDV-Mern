@@ -142,8 +142,8 @@ const getResumoFechamento = (pedidos) => {
         cartao_credito: 'Cartão Crédito',
         cartao_debito: 'Cartão Débito',
         cheque: 'Cheque',
-      }[tipo] || tipo},
-    ))
+      }[tipo] || tipo,
+    }))
     .sort((a, b) => b.valor - a.valor);
 
   return {
