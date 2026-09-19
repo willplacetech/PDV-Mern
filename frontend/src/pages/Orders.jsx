@@ -3,8 +3,10 @@ import api from '../services/api.jsx';
 
 export default function Orders() {
   const [pedidos, setPedidos] = useState([]);
+  const [clientes, setClientes] = useState([]);
   const [selecionado, setSelecionado] = useState(null);
   const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [clienteFiltro, setClienteFiltro] = useState('');
   const [categoria, setCategoria] = useState('');
   const [inicio, setInicio] = useState('');
   const [fim, setFim] = useState('');
@@ -13,11 +15,25 @@ export default function Orders() {
   const [cancelando, setCancelando] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
 
+  useEffect(() => {
+    const carregarClientes = async () => {
+      try {
+        const { data } = await api.get('/customers');
+        setClientes(data || []);
+      } catch (error) {
+        console.error('Erro ao carregar clientes:', error);
+      }
+    };
+
+    carregarClientes();
+  }, []);
+
   const carregar = async () => {
     setCarregando(true);
     try {
       const params = new URLSearchParams();
       if (filtroStatus !== 'todos') params.set('status', filtroStatus);
+      if (clienteFiltro) params.set('clienteId', clienteFiltro);
       if (categoria) params.set('categoria', categoria);
       if (inicio && fim) { params.set('inicio', inicio); params.set('fim', fim); }
       const url = `/orders${params.toString() ? `?${params.toString()}` : ''}`;
@@ -35,7 +51,7 @@ export default function Orders() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     carregar();
-  }, [filtroStatus, categoria, inicio, fim]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filtroStatus, clienteFiltro, categoria, inicio, fim]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ✅ Função de cancelamento - AJUSTADA PARA SUA ROTA
   const cancelarPedido = async (pedidoId) => {
@@ -110,6 +126,82 @@ export default function Orders() {
   }, {}), [pedidos]);
   const diferencaCaixa = valorConferido === '' ? null : Number(valorConferido) - totalVendido;
 
+  const gerarRelatorio = () => {
+    const nomeCliente = clientes.find(c => c._id === clienteFiltro)?.nome || 'Todos os clientes';
+    const linhas = pedidos.length > 0
+      ? pedidos.map((pedido) => `
+          <tr>
+            <td>#${pedido.numero}</td>
+            <td>${new Date(pedido.createdAt).toLocaleDateString('pt-BR')}</td>
+            <td>${pedido.clienteNome || 'Cliente não identificado'}</td>
+            <td>${pedido.itens?.length || 0}</td>
+            <td>R$ ${(Number(pedido.total || 0)).toFixed(2).replace('.', ',')}</td>
+            <td>${(pedido.status || 'pendente').toUpperCase()}</td>
+          </tr>
+        `).join('')
+      : '<tr><td colspan="6">Nenhum pedido encontrado</td></tr>';
+
+    const janela = window.open('', '_blank', 'width=980,height=760');
+    if (!janela) {
+      alert('O navegador bloqueou a janela de impressão. Permita pop-ups para gerar o relatório.');
+      return;
+    }
+
+    janela.document.write(`<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Relatório de Pedidos</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 32px; color: #111827; }
+            h1 { font-size: 26px; margin-bottom: 8px; }
+            .topo { margin-bottom: 20px; }
+            .meta { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: 10px; font-size: 13px; margin-bottom: 20px; }
+            .meta div { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
+            th { background: #f1f5f9; }
+            .resumo { font-weight: 700; margin-top: 18px; font-size: 15px; }
+            @media print { @page { margin: 20mm; } body { margin: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="topo">
+            <h1>Relatório de Pedidos</h1>
+            <div>Cliente: <strong>${nomeCliente}</strong></div>
+          </div>
+          <div class="meta">
+            <div>Período: ${inicio || 'Qualquer data'}</div>
+            <div>Até: ${fim || 'Último registro'}</div>
+            <div>Pedidos: <strong>${pedidos.length}</strong></div>
+            <div>Status: ${filtroStatus === 'todos' ? 'Todos' : filtroStatus}</div>
+            <div>Categoria: ${categoria || 'Todas'}</div>
+            <div>Total: <strong>R$ ${totalVendido.toFixed(2).replace('.', ',')}</strong></div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Nº</th>
+                <th>Data</th>
+                <th>Cliente</th>
+                <th>Itens</th>
+                <th>Valor</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>${linhas}</tbody>
+          </table>
+          <div class="resumo">Total vendido no filtro: R$ ${totalVendido.toFixed(2).replace('.', ',')}</div>
+        </body>
+      </html>
+    `);
+    janela.document.close();
+    setTimeout(() => {
+      janela.focus();
+      janela.print();
+    }, 250);
+  };
+
   const getStatusInfo = (status) => {
     const map = {
       pendente: { cor: '#f59e0b', texto: '⏳ PENDENTE' },
@@ -152,13 +244,35 @@ export default function Orders() {
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
         <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>De <input type="date" value={inicio} onChange={e => setInicio(e.target.value)} /></label>
         <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Até <input type="date" value={fim} onChange={e => setFim(e.target.value)} /></label>
+        <select value={clienteFiltro} onChange={e => setClienteFiltro(e.target.value)} style={{ padding: '7px 10px', borderRadius: 8, minWidth: 180 }}>
+          <option value="">Todos os clientes</option>
+          {clientes.map(cliente => (
+            <option key={cliente._id} value={cliente._id}>{cliente.nome}</option>
+          ))}
+        </select>
         <select value={categoria} onChange={e => setCategoria(e.target.value)} style={{ padding: '7px 10px', borderRadius: 8 }}>
           <option value="">Todas as categorias</option>
           {['Frios', 'Padaria', 'Hortifruti', 'Açougue', 'Bebidas', 'Limpeza', 'Mercearia'].map(item => <option key={item} value={item}>{item}</option>)}
         </select>
+        <button
+          type="button"
+          onClick={gerarRelatorio}
+          style={{
+            padding: '8px 12px',
+            borderRadius: 8,
+            border: '1px solid rgba(234,88,12,.4)',
+            background: 'rgba(234,88,12,.1)',
+            color: '#ea580c',
+            fontWeight: 700,
+            cursor: 'pointer',
+            marginLeft: 'auto'
+          }}
+        >
+          🖨️ Imprimir relatório
+        </button>
       </div>
 
       <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 16, padding: 16, boxShadow: 'var(--shadow-sm)' }}>

@@ -100,6 +100,87 @@ export default function Dashboard() {
 
   const maxValorGrafico = useMemo(() => Math.max(...(dados.grafico?.valores || [0]), 1), [dados.grafico]);
 
+  const gerarRelatorioDashboard = () => {
+    const clienteNome = clientes.find((cliente) => cliente._id === clienteFiltro)?.nome || 'Todos os clientes';
+    const statusNome = statusFiltro === 'todos' ? 'Todos' : statusOptions.find((status) => status.value === statusFiltro)?.label || statusFiltro;
+    const linhas = (dados.pedidos || []).length > 0
+      ? (dados.pedidos || []).map((pedido) => `
+          <tr>
+            <td>#${pedido.numero}</td>
+            <td>${pedido.clienteNome || 'Cliente não identificado'}</td>
+            <td>${formatDate(pedido.createdAt)}</td>
+            <td>${pedido.itens?.length || 0}</td>
+            <td>${formatCurrency(pedido.total)}</td>
+            <td>${getStatusMeta(pedido.status).label}</td>
+          </tr>
+        `).join('')
+      : '<tr><td colspan="6">Nenhum pedido encontrado</td></tr>';
+
+    const janela = window.open('', '_blank', 'width=980,height=760');
+    if (!janela) {
+      alert('O navegador bloqueou a janela de impressão. Permita pop-ups para gerar o relatório.');
+      return;
+    }
+
+    janela.document.write(`<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Relatório do Dashboard</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 32px; color: #0f172a; }
+            h1 { font-size: 28px; margin-bottom: 6px; }
+            .meta { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: 10px; margin: 20px 0; }
+            .meta div { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
+            th { background: #f1f5f9; }
+            .resumo { display: grid; grid-template-columns: repeat(4, minmax(160px, 1fr)); gap: 10px; margin: 18px 0; }
+            .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; font-size: 13px; }
+            @media print { @page { margin: 18mm; } body { margin: 0; } }
+          </style>
+        </head>
+        <body>
+          <h1>Relatório do Dashboard</h1>
+          <div>Período: <strong>${periodos.find((item) => item.key === periodo)?.label || 'Período'}</strong></div>
+          <div class="meta">
+            <div>Cliente: <strong>${clienteNome}</strong></div>
+            <div>Status: <strong>${statusNome}</strong></div>
+            <div>Pedidos: <strong>${dados.kpis?.pedidos || 0}</strong></div>
+            <div>Faturamento: <strong>${formatCurrency(dados.kpis?.total || 0)}</strong></div>
+            <div>Ticket Médio: <strong>${formatCurrency(dados.kpis?.ticketMedio || 0)}</strong></div>
+            <div>Itens vendidos: <strong>${dados.kpis?.itens || 0}</strong></div>
+          </div>
+          <div class="resumo">
+            <div class="box">Recebido: ${formatCurrency(dados.fechamento?.recebimentos || 0)}</div>
+            <div class="box">A receber: ${formatCurrency(dados.fechamento?.aReceber || 0)}</div>
+            <div class="box">Cancelado: ${formatCurrency(dados.fechamento?.cancelado || 0)}</div>
+            <div class="box">Variação: ${formatCurrency(dados.comparativo?.variacao || 0)}</div>
+          </div>
+          <h3>Pedidos recentes</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Nº</th>
+                <th>Cliente</th>
+                <th>Data</th>
+                <th>Itens</th>
+                <th>Valor</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>${linhas}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    janela.document.close();
+    setTimeout(() => {
+      janela.focus();
+      janela.print();
+    }, 250);
+  };
+
   return (
     <div style={{ display: 'grid', gap: 18 }}>
       <header style={{ display: 'grid', gap: 8 }}>
@@ -150,6 +231,24 @@ export default function Dashboard() {
                 <option key={status.value} value={status.value}>{status.label}</option>
               ))}
             </select>
+
+            <button
+              type="button"
+              onClick={gerarRelatorioDashboard}
+              style={{
+                minHeight: 38,
+                padding: '8px 14px',
+                borderRadius: 10,
+                border: '1px solid rgba(39,174,96,0.3)',
+                background: 'rgba(39,174,96,0.08)',
+                color: 'var(--text-primary)',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              🖨️ Imprimir relatório
+            </button>
           </div>
         </div>
       </section>
