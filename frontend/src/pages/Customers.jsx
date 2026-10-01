@@ -8,6 +8,7 @@ const aplicarMascaraTelefone = (valor) => {
   if (!valor) return '';
   const apenasNumeros = valor.replace(/\D/g, '');
   if (apenasNumeros.length <= 2) return apenasNumeros.replace(/^(\d{0,2})/, '($1');
+  if (apenasNumeros.length === 10) return apenasNumeros.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
   if (apenasNumeros.length <= 7) return apenasNumeros.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
   return apenasNumeros.replace(/^(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
 };
@@ -87,8 +88,8 @@ export default function Customers() {
     if (!form.nome.trim()) {
       return showToast('⚠️ Nome é obrigatório!', 'warning');
     }
-    if (telefoneLimpo.length !== 11) {
-      return showToast('⚠️ Telefone inválido! Digite com DDD e 9 dígitos', 'warning');
+    if (![10, 11].includes(telefoneLimpo.length)) {
+      return showToast('⚠️ Telefone inválido! Digite com DDD e 8 ou 9 dígitos', 'warning');
     }
     const erro = mensagemDocumento(form.documento);
     if (erro) {
@@ -194,7 +195,7 @@ export default function Customers() {
                 Telefone * <span style={{ color: 'var(--error-bg)', fontSize: 10 }}>(obrigatório)</span>
               </label>
               <input 
-                placeholder="(11) 99999-9999" 
+                placeholder="(11) 9999-9999 ou (11) 99999-9999"
                 value={form.telefone}
                 onChange={handleTelefoneChange}
                 style={inputStyle} 
