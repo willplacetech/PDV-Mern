@@ -73,7 +73,7 @@ export default function PDV() {
       if (prod.tipo === 'peso') {
         setCarrinho(carrinho.map(i => i.produtoId === prod._id ? { ...i, pesoKg: i.pesoKg + 0.1 } : i));
       } else {
-        setCarrinho(carrinho.map(i => i.produtoId === prod._id ? { ...i, quantidade: i.quantidade + 1 } : i));
+        setCarrinho(carrinho.map(i => i.produtoId === prod._id ? { ...i, quantidade: i.quantidade + 1, quantidadeInput: undefined } : i));
       }
     } else {
       setCarrinho([...carrinho, {
@@ -87,10 +87,23 @@ export default function PDV() {
 
 
   const alterarQtd = (idx, qtd) => {
-    const novos = [...carrinho];
     if (qtd < 1) return removerItem(idx);
-    novos[idx].quantidade = qtd;
-    setCarrinho(novos);
+    if (!Number.isSafeInteger(qtd)) return;
+    setCarrinho(carrinho.map((item, i) => i === idx
+      ? { ...item, quantidade: qtd, quantidadeInput: undefined }
+      : item));
+  };
+
+  const digitarQtd = (idx, valor) => {
+    if (!/^\d*$/.test(valor)) return;
+    const qtd = Number(valor);
+    setCarrinho(carrinho.map((item, i) => i === idx
+      ? {
+        ...item,
+        quantidadeInput: valor,
+        quantidade: Number.isSafeInteger(qtd) && qtd >= 1 ? qtd : item.quantidade
+      }
+      : item));
   };
 
   const alterarPeso = (idx, valor) => {
@@ -442,7 +455,7 @@ Obrigado pela preferência! 🙏`
                           ) : (
                             <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: 10, overflow: 'hidden' }}>
                               <button onClick={() => alterarQtd(i, item.quantidade - 1)} style={{ width: 40, height: 40, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--text-secondary)' }}>−</button>
-                              <input type="number" min={1} value={item.quantidade} onChange={e => alterarQtd(i, parseInt(e.target.value))} style={{ width: 48, textAlign: 'center', border: 'none', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', padding: '8px 4px', fontSize: 15, fontWeight: 700, background: 'var(--input-bg)', color: 'var(--input-text)' }} />
+                              <input type="text" inputMode="numeric" aria-label={`Quantidade de ${item.nome}`} value={item.quantidadeInput ?? item.quantidade} onChange={e => digitarQtd(i, e.target.value)} onFocus={e => e.target.select()} onBlur={() => alterarQtd(i, item.quantidade)} style={{ width: 64, textAlign: 'center', border: 'none', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', padding: '8px 4px', fontSize: 15, fontWeight: 700, background: 'var(--input-bg)', color: 'var(--input-text)' }} />
                               <button onClick={() => alterarQtd(i, item.quantidade + 1)} style={{ width: 40, height: 40, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--text-secondary)' }}>+</button>
                             </div>
                           )}
@@ -549,7 +562,7 @@ Obrigado pela preferência! 🙏`
                 fontSize: 14, fontWeight: 700, cursor: 'pointer', minHeight: 48
               }}>🛒 Iniciar Nova Venda</button>
               <button onClick={() => setModalSucesso(null)} style={{
-                width: '100%', padding: '10px', background: 'transparent', color: '#64748b',
+                width: '100%', padding: '10px', background: 'transparent', color: 'var(--text-secondary)',
                 border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 500,
                 cursor: 'pointer', minHeight: 36
               }}>Fechar</button>

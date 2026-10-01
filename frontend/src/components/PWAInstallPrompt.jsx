@@ -76,12 +76,12 @@ export default function PWAInstallPrompt() {
         style={{
           width: '100%',
           maxWidth: 420,
-          background: '#fff',
+          background: 'var(--bg-secondary)',
           borderRadius: 18,
           boxShadow: '0 18px 50px rgba(15, 23, 42, 0.22)',
           padding: 24,
           position: 'relative',
-          color: '#111827',
+          color: 'var(--text-primary)',
         }}
       >
         <button
@@ -95,7 +95,7 @@ export default function PWAInstallPrompt() {
             border: 'none',
             background: 'transparent',
             fontSize: 22,
-            color: '#475569',
+            color: 'var(--text-secondary)',
             cursor: 'pointer',
             lineHeight: 1,
           }}
@@ -107,7 +107,7 @@ export default function PWAInstallPrompt() {
           <div style={{ fontSize: 28 }}>📲</div>
           <div>
             <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Instalar o app</h3>
-            <p style={{ margin: '8px 0 0', color: '#475569', lineHeight: 1.5 }}>
+            <p style={{ margin: '8px 0 0', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               Acesse o Mercado Nascimento com mais rapidez e sem depender do navegador.
             </p>
           </div>
@@ -136,10 +136,10 @@ export default function PWAInstallPrompt() {
               style={{
                 minWidth: 116,
                 minHeight: 44,
-                border: '1px solid #d1d5db',
+                border: '1px solid var(--border-color)',
                 borderRadius: 12,
-                background: '#fff',
-                color: '#374151',
+                background: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
                 fontWeight: 700,
                 cursor: 'pointer',
               }}

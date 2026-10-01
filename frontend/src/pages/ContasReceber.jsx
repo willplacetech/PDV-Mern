@@ -478,28 +478,28 @@ Obrigado! 🙏`
 
   return (
     <div>
-      <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: '#0f172a' }}>📊 Contas a Receber</h1>
-      <p style={{ color: '#64748b', fontSize: 13, margin: '0 0 20px' }}>Acerto de pendências por cliente</p>
+      <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text-primary)' }}>📊 Contas a Receber</h1>
+      <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '0 0 20px' }}>Acerto de pendências por cliente</p>
 
       {/* FILTROS */}
       <div style={{
-        background: '#fff', border: '1px solid rgba(15,23,42,.08)', borderRadius: 16,
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 16,
         padding: 16, marginBottom: 16, display: 'grid', gap: 12,
         gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))'
       }}>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 4 }}>Cliente</label>
+          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Cliente</label>
           <select value={clienteFiltro} onChange={e => setClienteFiltro(e.target.value)} style={{
-            width: '100%', padding: '10px', border: '1px solid rgba(15,23,42,.1)', borderRadius: 10
+            width: '100%', padding: '10px', border: '1px solid var(--input-border)', borderRadius: 10
           }}>
             <option value="">Todos os clientes</option>
             {clientes.map(c => <option key={c._id} value={c._id}>{c.nome}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 4 }}>Status</label>
+          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Status</label>
           <select value={statusFiltro} onChange={e => setStatusFiltro(e.target.value)} style={{
-            width: '100%', padding: '10px', border: '1px solid rgba(15,23,42,.1)', borderRadius: 10
+            width: '100%', padding: '10px', border: '1px solid var(--input-border)', borderRadius: 10
           }}>
             <option value="">Todos</option>
             <option value="pendente">Pendentes</option>
@@ -508,15 +508,15 @@ Obrigado! 🙏`
           </select>
         </div>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 4 }}>Data Início</label>
+          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Data Início</label>
           <input type="date" value={inicio} onChange={e => setInicio(e.target.value)} style={{
-            width: '100%', padding: '10px', border: '1px solid rgba(15,23,42,.1)', borderRadius: 10
+            width: '100%', padding: '10px', border: '1px solid var(--input-border)', borderRadius: 10
           }} />
         </div>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 4 }}>Data Fim</label>
+          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Data Fim</label>
           <input type="date" value={fim} onChange={e => setFim(e.target.value)} style={{
-            width: '100%', padding: '10px', border: '1px solid rgba(15,23,42,.1)', borderRadius: 10
+            width: '100%', padding: '10px', border: '1px solid var(--input-border)', borderRadius: 10
           }} />
         </div>
       </div>
@@ -554,7 +554,7 @@ Obrigado! 🙏`
             <div style={{ display: 'flex', gap: 6 }}>
               {/* ✅ Botão Alterado: Agora é RECEBER MARCADOS */}
               <button onClick={abrirReceberMarcados} style={{
-                padding: '6px 12px', background: '#fff', color: '#c2410c',
+                padding: '6px 12px', background: 'var(--bg-secondary)', color: 'var(--attention-text)',
                 border: 'none', borderRadius: 8,
                 fontSize: 12, fontWeight: 700, cursor: 'pointer'
               }}>💰 Receber Marcados ({selecionados.size})</button>
@@ -580,7 +580,7 @@ Obrigado! 🙏`
 
       {/* LISTA DE PEDIDOS */}
       {pedidos.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b', background: '#fff', borderRadius: 12 }}>
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', borderRadius: 12 }}>
           {carregando ? 'Carregando pedidos...' : 'Nenhum pedido encontrado'}
         </div>
       ) : (
@@ -595,8 +595,8 @@ Obrigado! 🙏`
 
             return (
               <div key={pedido._id} style={{
-                background: estaSelecionado ? '#f0fdf4' : '#fff', 
-                border: estaSelecionado ? '2px solid #16a34a' : '1px solid rgba(15,23,42,.08)', 
+                background: estaSelecionado ? 'var(--accent-light)' : 'var(--bg-secondary)', 
+                border: estaSelecionado ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)', 
                 borderRadius: 14, padding: 16,
                 transition: 'all 0.15s'
               }}>
@@ -610,14 +610,14 @@ Obrigado! 🙏`
                     />
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 15, overflowWrap: 'anywhere' }}>#{pedido.numero} — {pedido.clienteNome}</div>
-                      <div style={{ fontSize: 12, color: '#64748b' }}>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                         {new Date(pedido.createdAt).toLocaleString('pt-BR')} • Atendente: {pedido.atendente}
                       </div>
                     </div>
                   </div>
                   <span style={{
-                    background: st?.bg || '#f1f5f9', 
-                    color: st?.txt || '#475569', 
+                    background: st?.bg || 'var(--bg-tertiary)', 
+                    color: st?.txt || 'var(--text-primary)', 
                     padding: '4px 10px',
                     borderRadius: 20, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap'
                   }}>{st?.label || pedido.status}</span>
@@ -625,19 +625,19 @@ Obrigado! 🙏`
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 12 }}>
                   <div>
-                    <div style={{ fontSize: 11, color: '#64748b' }}>Valor Total</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Valor Total</div>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>R$ {parseFloat(pedido.total).toFixed(2).replace('.',',')}</div>
                   </div>
                   {pedido.status !== 'pendente' && (
                     <>
                       <div>
-                        <div style={{ fontSize: 11, color: '#64748b' }}>Pago</div>
-                        <div style={{ fontWeight: 600, fontSize: 14, color: '#16a34a' }}>R$ {totalPago.toFixed(2).replace('.',',')}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Pago</div>
+                        <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--positive-text)' }}>R$ {totalPago.toFixed(2).replace('.',',')}</div>
                       </div>
                       {falta > 0 && (
                         <div>
-                          <div style={{ fontSize: 11, color: '#64748b' }}>A Receber</div>
-                          <div style={{ fontWeight: 700, fontSize: 15, color: '#dc2626' }}>R$ {falta.toFixed(2).replace('.',',')}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>A Receber</div>
+                          <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--negative-text)' }}>R$ {falta.toFixed(2).replace('.',',')}</div>
                         </div>
                       )}
                     </>
@@ -645,10 +645,10 @@ Obrigado! 🙏`
                 </div>
 
                 {pedido.pagamentos?.length > 0 && (
-                  <div style={{ background: '#f8fafc', borderRadius: 8, padding: 10, marginBottom: 12 }}>
+                  <div style={{ background: 'var(--bg-tertiary)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Pagamentos:</div>
                     {pedido.pagamentos.map((pg, i) => (
-                      <div key={i} style={{ fontSize: 12, padding: '4px 0', borderTop: '1px solid #eee' }}>
+                      <div key={i} style={{ fontSize: 12, padding: '4px 0', borderTop: '1px solid var(--border-color)' }}>
                         {pg.dataPagamento ? new Date(pg.dataPagamento).toLocaleDateString('pt-BR') : '-'}
                         {' • '}{formaPagamentoLabel[pg.tipo] || pg.tipo}
                         {' • '}<strong>R$ {parseFloat(pg.valorRecebido).toFixed(2).replace('.',',')}</strong>
@@ -742,18 +742,18 @@ Obrigado! 🙏`
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 20
         }}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 380
+            background: 'var(--bg-secondary)', borderRadius: 16, padding: 24, width: '100%', maxWidth: 380
           }}>
             <h3 style={{ margin: '0 0 16px' }}>💰 Receber Pedidos Selecionados</h3>
             <p style={{ fontSize: 14, margin: '0 0 16px' }}>
               <strong>{selecionados.size}</strong> pedido(s) selecionado(s)<br/>
-              Valor total a receber: <strong style={{ color: '#c2410c', fontSize: 16 }}>R$ {valorTotalSelecionados.toFixed(2).replace('.',',')}</strong>
+              Valor total a receber: <strong style={{ color: 'var(--attention-text)', fontSize: 16 }}>R$ {valorTotalSelecionados.toFixed(2).replace('.',',')}</strong>
             </p>
 
             <div style={{ marginBottom: 12 }}>
               <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>Forma de Pagamento</label>
               <select value={formPagamentoMultiplo.tipo} onChange={e => setFormPagamentoMultiplo({...formPagamentoMultiplo, tipo: e.target.value})} style={{
-                width: '100%', padding: 10, border: '1px solid rgba(15,23,42,.1)', borderRadius: 10
+                width: '100%', padding: 10, border: '1px solid var(--input-border)', borderRadius: 10
               }}>
                 <option value="dinheiro">💵 Dinheiro</option>
                 <option value="pix">🔄 PIX</option>
@@ -769,12 +769,12 @@ Obrigado! 🙏`
               <input type="text" placeholder="Ex: Pagamento em lote"
                 value={formPagamentoMultiplo.observacao}
                 onChange={e => setFormPagamentoMultiplo({...formPagamentoMultiplo, observacao: e.target.value})}
-                style={{ width: '100%', padding: 10, border: '1px solid rgba(15,23,42,.1)', borderRadius: 10 }} />
+                style={{ width: '100%', padding: 10, border: '1px solid var(--input-border)', borderRadius: 10 }} />
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setPagamentoMultiploModal(null)} style={{
-                flex: 1, padding: 12, background: '#f1f5f9', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer'
+                flex: 1, padding: 12, background: 'var(--bg-tertiary)', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer'
               }}>Cancelar</button>
               <button onClick={registrarPagamentoMultiplo} style={{
                 flex: 1, padding: 12, background: '#16a34a', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer'
@@ -791,7 +791,7 @@ Obrigado! 🙏`
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 20
         }}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 360
+            background: 'var(--bg-secondary)', borderRadius: 16, padding: 24, width: '100%', maxWidth: 360
           }}>
             <h3 style={{ margin: '0 0 16px' }}>Receber Pagamento</h3>
             <p style={{ fontSize: 14, margin: '0 0 16px' }}>
@@ -801,7 +801,7 @@ Obrigado! 🙏`
             <div style={{ marginBottom: 12 }}>
               <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>Forma de Pagamento</label>
               <select value={formPagamento.tipo} onChange={e => setFormPagamento({...formPagamento, tipo: e.target.value})} style={{
-                width: '100%', padding: 10, border: '1px solid rgba(15,23,42,.1)', borderRadius: 10
+                width: '100%', padding: 10, border: '1px solid var(--input-border)', borderRadius: 10
               }}>
                 <option value="dinheiro">💵 Dinheiro</option>
                 <option value="pix">🔄 PIX</option>
@@ -817,7 +817,7 @@ Obrigado! 🙏`
               <input type="number" step="0.01" min="0" autoFocus
                 value={formPagamento.valorRecebido}
                 onChange={e => setFormPagamento({...formPagamento, valorRecebido: e.target.value})}
-                style={{ width: '100%', padding: 10, border: '1px solid rgba(15,23,42,.1)', borderRadius: 10, fontSize: 16 }} />
+                style={{ width: '100%', padding: 10, border: '1px solid var(--input-border)', borderRadius: 10, fontSize: 16 }} />
             </div>
 
             <div style={{ marginBottom: 16 }}>
@@ -825,12 +825,12 @@ Obrigado! 🙏`
               <input type="text" placeholder="Ex: Pagamento parcial"
                 value={formPagamento.observacao}
                 onChange={e => setFormPagamento({...formPagamento, observacao: e.target.value})}
-                style={{ width: '100%', padding: 10, border: '1px solid rgba(15,23,42,.1)', borderRadius: 10 }} />
+                style={{ width: '100%', padding: 10, border: '1px solid var(--input-border)', borderRadius: 10 }} />
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setPagamentoModal(null)} style={{
-                flex: 1, padding: 12, background: '#f1f5f9', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer'
+                flex: 1, padding: 12, background: 'var(--bg-tertiary)', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer'
               }}>Cancelar</button>
               <button onClick={registrarPagamento} style={{
                 flex: 1, padding: 12, background: '#16a34a', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer'

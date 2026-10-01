@@ -3,6 +3,7 @@
    ======================================== */
 [data-theme="light"],
 :root:not([data-theme="dark"]) {
+  color-scheme: light;
   --bg-primary: #f8f9fa;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f5f3f0;
@@ -11,6 +12,9 @@
   --text-primary: #0f172a;
   --text-secondary: #64748b;
   --text-tertiary: #94a3b8;
+  --positive-text: #15803d;
+  --negative-text: #dc2626;
+  --attention-text: #c2410c;
   
   --border-color: #e5e4e7;
   --border-light: #f1f0ef;
@@ -43,6 +47,7 @@
    MODO ESCURO
    ======================================== */
 [data-theme="dark"] {
+  color-scheme: dark;
   --bg-primary: #0f1419;
   --bg-secondary: #1a1f2e;
   --bg-tertiary: #24293d;
@@ -51,6 +56,9 @@
   --text-primary: #f3f4f6;
   --text-secondary: #d1d5db;
   --text-tertiary: #9ca3af;
+  --positive-text: #4ade80;
+  --negative-text: #f87171;
+  --attention-text: #fb923c;
   
   --border-color: #374151;
   --border-light: #1f2937;
@@ -340,10 +348,10 @@ tbody tr:hover {
   gap: 18px;
   max-width: calc(100vw - 36px);
   padding: 14px 16px;
-  border: 1px solid #b7dfc6;
+  border: 1px solid var(--accent-border);
   border-radius: 12px;
-  background: #fff;
-  color: #2c3e50;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   box-shadow: 0 12px 28px rgba(44, 62, 80, .18);
 }
 
@@ -353,7 +361,7 @@ tbody tr:hover {
 }
 
 .pwa-install-banner span {
-  color: #607080;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
