@@ -42,6 +42,12 @@ router.post('/', auth, async (req, res) => {
       if (!produto) throw new Error(`Produto não encontrado: ${item.produtoId}`);
       const pesoKg = Number(item.pesoKg);
       const pesavel = produto.tipo === 'peso';
+      const precoUnitario = item.precoUnitario === undefined
+        ? (pesavel ? produto.precoVendaPorKg : produto.preco)
+        : item.precoUnitario;
+      if (typeof precoUnitario !== 'number' || !Number.isFinite(precoUnitario) || precoUnitario < 0) {
+        throw new Error(`Preço inválido para "${produto.nome}"`);
+      }
       if (pesavel && (!Number.isFinite(pesoKg) || pesoKg <= 0)) throw new Error(`Informe o peso de "${produto.nome}"`);
       if (!pesavel && !Number.isInteger(item.quantidade)) throw new Error(`Quantidade inválida para "${produto.nome}"`);
       return {
@@ -49,7 +55,7 @@ router.post('/', auth, async (req, res) => {
         codigo: produto.codigo,
         nome: produto.nome,
         categoria: produto.categoria,
-        precoUnitario: pesavel ? produto.precoVendaPorKg : produto.preco,
+        precoUnitario,
         quantidade: pesavel ? 1 : item.quantidade,
         pesoKg: pesavel ? pesoKg : undefined,
         tipo: produto.tipo || 'unidade',
