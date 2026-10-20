@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import api from '../services/api.jsx';
-import { useToast } from '../components/Toast.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import Pagination from '../components/Pagination.jsx';
 import useServerPagination from '../hooks/useServerPagination.js';
 

@@ -1,7 +1,7 @@
 import { useContext, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext.jsx';
-import { useToast } from '../components/Toast.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import api from '../services/api.jsx';
 
 export default function Users() {

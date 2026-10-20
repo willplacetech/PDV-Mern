@@ -1,8 +1,8 @@
 import { useState, useContext } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext.jsx';
-import { ThemeContext } from '../context/ThemeContext.jsx';
-import { useToast } from '../components/Toast.jsx';
+import { ThemeContext } from '../context/ThemeContextDefinition.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 
 export default function Login() {
   const [form, setForm] = useState({ username: '', password: '' });

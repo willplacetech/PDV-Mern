@@ -1,7 +1,7 @@
 import { useContext, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext.jsx';
-import { ThemeContext } from '../context/ThemeContext.jsx';
+import { ThemeContext } from '../context/ThemeContextDefinition.jsx';
 
 
 export default function Layout() {

@@ -3,19 +3,13 @@ import { useEffect, useState } from 'react';
 const STORAGE_KEY = 'pwa-install-dismissed';
 
 export default function PWAInstallPrompt() {
+  const appInstalado = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const [evento, setEvento] = useState(null);
-  const [visivel, setVisivel] = useState(false);
-  const [instalado, setInstalado] = useState(false);
+  const [visivel, setVisivel] = useState(() => !appInstalado && !localStorage.getItem(STORAGE_KEY));
+  const [instalado, setInstalado] = useState(appInstalado);
 
   useEffect(() => {
-    const jaInstalado = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    if (jaInstalado) {
-      setInstalado(true);
-      return;
-    }
-
-    const naoFoiFechado = !localStorage.getItem(STORAGE_KEY);
-    setVisivel(naoFoiFechado);
+    if (instalado) return undefined;
 
     const capturar = (e) => {
       e.preventDefault();
@@ -36,7 +30,7 @@ export default function PWAInstallPrompt() {
       window.removeEventListener('beforeinstallprompt', capturar);
       window.removeEventListener('appinstalled', aoInstalar);
     };
-  }, []);
+  }, [instalado]);
 
   if (instalado || !visivel) return null;
 
