@@ -1,66 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import api from '../services/api.jsx';
 import { useToast } from '../components/Toast.jsx';
+import Pagination from '../components/Pagination.jsx';
+import useServerPagination from '../hooks/useServerPagination.js';
 
 
 const categorias = ['Frios', 'Padaria', 'Hortifruti', 'Açougue', 'Bebidas', 'Limpeza', 'Mercearia'];
 
 
 export default function Products() {
-  const [produtos, setProdutos] = useState([]);
   const [form, setForm] = useState({ codigo: '', nome: '', categoria: 'Mercearia', tipo: 'unidade', preco: '', precoVendaPorKg: '' });
   const [editing, setEditing] = useState(null);
   const [filtro, setFiltro] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const { showToast } = useToast();
-
-
-  const gerarProximoCodigo = () => {
-    if (produtos.length === 0) {
-      setForm(prev => ({ ...prev, codigo: '1' }));
-      return;
-    }
-    const maiorCodigo = produtos.reduce((maior, p) => {
-      const cod = parseInt(p.codigo) || 0;
-      return cod > maior ? cod : maior;
-    }, 0);
-    setForm(prev => ({ ...prev, codigo: String(maiorCodigo + 1) }));
-  };
-
-  const carregar = async () => {
-    const res = await api.get('/products');
-    setProdutos(res.data);
-  };
-
-  // O carregamento inicial depende do ciclo de montagem do cadastro.
-  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
-  useEffect(() => { carregar(); }, []);
-
-  // O código automático reage à lista carregada e ao modo de edição.
-  useEffect(() => {
-    if (!editing && produtos.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      gerarProximoCodigo();
-    }
-  }, [produtos, editing]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 🔒 Verifica duplicidade de CÓDIGO
-  const codigoJaExiste = (codigo, idEdicao = null) => {
-    return produtos.some(p => 
-      String(p.codigo) === String(codigo) && p._id !== idEdicao
-    );
-  };
+  const list = useServerPagination('/products', { search: filtro, includeMetadata: '1' }, page, pageSize);
+  const produtos = list.items;
+  const codigoAtual = editing ? form.codigo : list.metadata?.nextCode || form.codigo;
 
 
   const submit = async (e) => {
     e.preventDefault();
 
-    // ✅ Verifica duplicidade
-    if (codigoJaExiste(form.codigo, editing?._id)) {
-      return showToast('⚠️ Este código já está cadastrado! Use outro.', 'warning');
-    }
-
     const dados = {
       ...form,
+      codigo: codigoAtual,
       preco: form.tipo === 'unidade' ? parseFloat(form.preco) : 0,
       precoVendaPorKg: form.tipo === 'peso' ? parseFloat(form.precoVendaPorKg) : undefined,
     };
@@ -69,7 +34,7 @@ export default function Products() {
       showToast(editing ? '✅ Produto atualizado!' : '✅ Produto cadastrado!', 'success');
       setForm({ codigo: '', nome: '', categoria: 'Mercearia', tipo: 'unidade', preco: '', precoVendaPorKg: '' });
       setEditing(null);
-      carregar();
+      list.reload();
     } catch (err) {
       showToast(err.response?.data?.msg || '❌ Erro ao salvar', 'error');
     }
@@ -87,7 +52,7 @@ export default function Products() {
     if (!window.confirm('Excluir este produto?')) return;
     await api.delete(`/products/${id}`);
     showToast('Produto removido', 'warning');
-    carregar();
+    list.reload();
   };
 
 
@@ -95,11 +60,6 @@ export default function Products() {
     setEditing(null);
     setForm({ codigo: '', nome: '', categoria: 'Mercearia', tipo: 'unidade', preco: '', precoVendaPorKg: '' });
   };
-
-
-  const filtrados = produtos.filter(p =>
-    p.nome.toLowerCase().includes(filtro.toLowerCase()) || String(p.codigo).includes(filtro)
-  );
 
 
   return (
@@ -125,7 +85,7 @@ export default function Products() {
               </label>
               <input 
                 placeholder="Automático" 
-                value={form.codigo} 
+                value={codigoAtual}
                 readOnly={!editing}
                 onChange={e => setForm({ ...form, codigo: e.target.value })}
                 style={{
@@ -166,7 +126,7 @@ export default function Products() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-            <button type="submit" className="primary-button" style={{ flex: 1, minHeight: 46 }}>{editing ? 'Atualizar' : 'Cadastrar'}</button>
+            <button type="submit" className="primary-button" disabled={!editing && !codigoAtual} style={{ flex: 1, minHeight: 46 }}>{editing ? 'Atualizar' : 'Cadastrar'}</button>
             {editing && <button type="button" className="secondary-button" onClick={cancelar} style={{ minHeight: 46 }}>Cancelar</button>}
           </div>
         </form>
@@ -181,14 +141,17 @@ export default function Products() {
           <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
             Cadastrados
             <span style={{ background: 'var(--accent-light)', color: 'var(--accent-primary)', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
-              {filtrados.length}
+              {list.total}
             </span>
           </h3>
           <input placeholder="Filtrar..." value={filtro}
-            onChange={e => setFiltro(e.target.value)}
+            onChange={e => { setFiltro(e.target.value); setPage(1); }}
             style={{ ...inputStyle, width: 180, padding: '8px 12px', minHeight: 40 }} />
         </div>
 
+        {list.error && (
+          <p role="alert" style={{ color: 'var(--error-bg)', fontSize: 13 }}>{list.error}</p>
+        )}
 
         <div style={{ overflowX: 'auto', margin: '0 -16px', padding: '0 16px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 500 }}>
@@ -200,9 +163,9 @@ export default function Products() {
               </tr>
             </thead>
             <tbody>
-              {filtrados.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 24, color: 'var(--text-secondary)', fontSize: 13 }}>Nenhum produto cadastrado</td></tr>
-              ) : filtrados.map(p => (
+              {produtos.length === 0 ? (
+                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 24, color: 'var(--text-secondary)', fontSize: 13 }}>{list.loading ? 'Carregando produtos...' : 'Nenhum produto encontrado'}</td></tr>
+              ) : produtos.map(p => (
                 <tr key={p._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                   <td style={{ padding: '10px 8px', fontFamily: 'monospace', fontSize: 13 }}>{p.codigo}</td>
                   <td style={{ padding: '10px 8px', fontWeight: 600, fontSize: 13, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nome}</td>
@@ -223,6 +186,14 @@ export default function Products() {
             </tbody>
           </table>
         </div>
+        <Pagination
+          page={list.page}
+          pageSize={list.pageSize}
+          total={list.total}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => { setPage(1); setPageSize(size); }}
+          disabled={list.loading}
+        />
       </div>
 
 

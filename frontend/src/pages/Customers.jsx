@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import api from '../services/api.jsx';
 import { useToast } from '../components/Toast.jsx';
+import Pagination from '../components/Pagination.jsx';
+import useServerPagination from '../hooks/useServerPagination.js';
 
 
 // 🎯 Máscaras
@@ -54,28 +56,14 @@ const mensagemDocumento = (valor) => {
 
 
 export default function Customers() {
-  const [clientes, setClientes] = useState([]);
   const [form, setForm] = useState({ nome: '', telefone: '', endereco: '', email: '', documento: '' });
   const [documentoErro, setDocumentoErro] = useState('');
   const [editing, setEditing] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const { showToast } = useToast();
-
-
-  const carregar = async () => {
-    const res = await api.get('/customers');
-    setClientes(res.data);
-  };
-
-  // O carregamento inicial sincroniza a lista com a API.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { carregar(); }, []);
-
-  const documentoJaExiste = (documento, idEdicao = null) => {
-    const documentoLimpo = String(documento).replace(/\D/g, '');
-    return clientes.some(c => 
-      String(c.documento || c.cpf || '').replace(/\D/g, '') === documentoLimpo && c._id !== idEdicao
-    );
-  };
+  const list = useServerPagination('/customers', {}, page, pageSize);
+  const clientes = list.items;
 
 
   const submit = async (e) => {
@@ -97,10 +85,6 @@ export default function Customers() {
       return showToast(`⚠️ ${erro}`, 'warning');
     }
 
-    if (documentoJaExiste(documentoLimpo, editing?._id)) {
-      return showToast('⚠️ Este documento já está cadastrado!', 'warning');
-    }
-
     const dadosParaEnviar = {
       nome: form.nome.trim(),
       telefone: telefoneLimpo,
@@ -119,9 +103,9 @@ export default function Customers() {
       setForm({ nome: '', telefone: '', endereco: '', email: '', documento: '' });
       setDocumentoErro('');
       setEditing(null);
-      carregar();
-    } catch {
-      showToast('❌ Erro ao salvar', 'error');
+      list.reload();
+    } catch (error) {
+      showToast(error.response?.data?.msg || '❌ Erro ao salvar', 'error');
     }
   };
 
@@ -143,7 +127,7 @@ export default function Customers() {
     if (!window.confirm('Excluir este cliente?')) return;
     await api.delete(`/customers/${id}`);
     showToast('Cliente removido', 'warning');
-    carregar();
+    list.reload();
   };
 
 
@@ -257,9 +241,12 @@ export default function Customers() {
         <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
           Cadastrados
           <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success-bg)', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
-            {clientes.length}
+            {list.total}
           </span>
         </h3>
+        {list.error && (
+          <p role="alert" style={{ color: 'var(--error-bg)', fontSize: 13 }}>{list.error}</p>
+        )}
         <div style={{ overflowX: 'auto', margin: '0 -16px', padding: '0 16px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
             <thead>
@@ -271,7 +258,7 @@ export default function Customers() {
             </thead>
             <tbody>
               {clientes.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 24, color: 'var(--text-secondary)', fontSize: 13 }}>Nenhum cliente cadastrado</td></tr>
+                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 24, color: 'var(--text-secondary)', fontSize: 13 }}>{list.loading ? 'Carregando clientes...' : 'Nenhum cliente cadastrado'}</td></tr>
               ) : clientes.map(c => (
                 <tr key={c._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                   <td style={{ padding: '10px 8px', fontWeight: 600, fontSize: 13 }}>{c.nome}</td>
@@ -293,6 +280,14 @@ export default function Customers() {
             </tbody>
           </table>
         </div>
+        <Pagination
+          page={list.page}
+          pageSize={list.pageSize}
+          total={list.total}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => { setPage(1); setPageSize(size); }}
+          disabled={list.loading}
+        />
       </div>
 
 

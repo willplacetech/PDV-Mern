@@ -3,6 +3,8 @@ import api from '../services/api.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { enfileirarVenda, sincronizarVendas } from '../services/offlineSales.js';
 import { enviarMensagemWhatsApp } from '../services/whatsapp.js';
+import Pagination from '../components/Pagination.jsx';
+import useServerPagination from '../hooks/useServerPagination.js';
 
 
 const corCategoria = {
@@ -28,20 +30,32 @@ const formatarPeso = valor => Number(valor || 0).toFixed(3).replace('.', ',');
 
 
 export default function PDV() {
-  const [produtos, setProdutos] = useState([]);
   const [carrinho, setCarrinho] = useState([]);
   const [busca, setBusca] = useState('');
+  const [buscaAplicada, setBuscaAplicada] = useState('');
   const [clientes, setClientes] = useState([]);
   const [clienteId, setClienteId] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [desconto, setDesconto] = useState(0);
   const [modalSucesso, setModalSucesso] = useState(null);
   const { showToast } = useToast();
   const selectClienteRef = useRef(null); // ✅ Referência para focar na caixa
+  const listaProdutos = useServerPagination('/products', { search: buscaAplicada }, page, pageSize);
+  const produtos = listaProdutos.items;
 
 
   // O carregamento inicial depende do ciclo de montagem do PDV.
   // eslint-disable-next-line react-hooks/immutability, react-hooks/exhaustive-deps
   useEffect(() => { carregarDados(); }, []);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setBuscaAplicada(busca);
+      setPage(1);
+    }, 250);
+    return () => clearTimeout(timeout);
+  }, [busca]);
 
   useEffect(() => {
     const sincronizar = async () => {
@@ -56,10 +70,7 @@ export default function PDV() {
 
   const carregarDados = async () => {
     try {
-      const [resProd, resCli] = await Promise.all([
-        api.get('/products'), api.get('/customers')
-      ]);
-      setProdutos(resProd.data);
+      const resCli = await api.get('/customers');
       setClientes(resCli.data);
     } catch {
       showToast('Erro ao carregar dados', 'error');
@@ -295,13 +306,6 @@ Obrigado pela preferência! 🙏`
   };
 
 
-  const filtrados = produtos.filter(p =>
-    p.nome.toLowerCase().includes(busca.toLowerCase()) ||
-    String(p.codigo).toLowerCase().includes(busca.toLowerCase()) ||
-    p.categoria.toLowerCase().includes(busca.toLowerCase())
-  );
-
-
   return (
     <div>
       {/* Cabeçalho PDV */}
@@ -355,17 +359,18 @@ Obrigado pela preferência! 🙏`
               <span style={{
                 background: 'var(--accent-light)', color: 'var(--accent-primary)',
                 padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600
-              }}>{filtrados.length}</span>
+              }}>{listaProdutos.total}</span>
             </div>
-            {filtrados.length === 0 ? (
-              <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px 20px', fontSize: 14 }}>Nenhum produto encontrado</p>
+            {listaProdutos.error && <p role="alert" style={{ color: 'var(--error-bg)', fontSize: 13 }}>{listaProdutos.error}</p>}
+            {produtos.length === 0 ? (
+              <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px 20px', fontSize: 14 }}>{listaProdutos.loading ? 'Carregando produtos...' : 'Nenhum produto encontrado'}</p>
             ) : (
               <div style={{
                 display: 'grid', gap: 10,
                 gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
                 maxHeight: 420, overflowY: 'auto', padding: 2
               }}>
-                {filtrados.map(p => {
+                {produtos.map(p => {
                   const cat = corCategoria[p.categoria] || corCategoria.Outros;
                   return (
                     <div key={p._id} onClick={() => adicionarItem(p)} style={{
@@ -395,6 +400,14 @@ Obrigado pela preferência! 🙏`
                 })}
               </div>
             )}
+            <Pagination
+              page={listaProdutos.page}
+              pageSize={listaProdutos.pageSize}
+              total={listaProdutos.total}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => { setPage(1); setPageSize(size); }}
+              disabled={listaProdutos.loading}
+            />
           </div>
         </div>
         {/* COLUNA CARRINHO */}

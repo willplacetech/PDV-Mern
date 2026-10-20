@@ -3,6 +3,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
 const Product = require('../models/Product');
+const { buildPage, getEffectivePage, parsePagination } = require('../services/pagination');
 
 // @route   GET api/products
 // @desc    Listar todos os produtos com busca
@@ -10,14 +11,17 @@ const Product = require('../models/Product');
 router.get('/', auth, async (req, res) => {
   try {
     const { search, categoria } = req.query;
+    const pagination = parsePagination(req.query);
+    if (pagination?.error) return res.status(400).json({ msg: pagination.error });
     let query = {};
 
     // Busca por texto (nome ou código)
     if (search) {
       query = {
         $or: [
-          { nome: { $regex: search, $options: 'i' } },
-          { codigo: { $regex: search, $options: 'i' } },
+          { nome: { $regex: String(search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } },
+          { codigo: { $regex: String(search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } },
+          { categoria: { $regex: String(search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } },
         ],
       };
     }
@@ -27,7 +31,35 @@ router.get('/', auth, async (req, res) => {
       query.categoria = categoria;
     }
 
-    const products = await Product.find(query).sort({ nome: 1 });
+    let productsQuery = Product.find(query).sort({ nome: 1, _id: 1 });
+    if (pagination) {
+      const [total, nextCodeResult] = await Promise.all([
+        Product.countDocuments(query),
+        req.query.includeMetadata === '1'
+          ? Product.aggregate([
+              {
+                $project: {
+                  numericCode: {
+                    $convert: { input: '$codigo', to: 'long', onError: null, onNull: null },
+                  },
+                },
+              },
+              { $group: { _id: null, maximum: { $max: '$numericCode' } } },
+            ])
+          : Promise.resolve(null),
+      ]);
+      const page = getEffectivePage(pagination.page, pagination.pageSize, total);
+      productsQuery = productsQuery
+        .skip((page - 1) * pagination.pageSize)
+        .limit(pagination.pageSize);
+      const products = await productsQuery;
+      const metadata = nextCodeResult
+        ? { metadata: { nextCode: String((nextCodeResult[0]?.maximum || 0) + 1) } }
+        : {};
+      return res.json(buildPage(products, page, pagination.pageSize, total, metadata));
+    }
+
+    const products = await productsQuery;
     res.json(products);
   } catch (err) {
     console.error(err.message);

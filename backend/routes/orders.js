@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Product = require('../models/Product'); // ✅ ADICIONADO: Importa o modelo de Produto
 const auth = require('../middleware/auth');
+const { buildPage, getEffectivePage, parsePagination } = require('../services/pagination');
 
 
 const router = express.Router();
@@ -95,6 +96,8 @@ router.post('/', auth, async (req, res) => {
 router.get('/', auth, async (req, res) => {
   try {
     const { clienteId, status, inicio, fim, categoria } = req.query;
+    const pagination = parsePagination(req.query);
+    if (pagination?.error) return res.status(400).json({ msg: pagination.error });
     const filtro = {};
     
     if (clienteId) filtro.clienteId = clienteId;
@@ -107,7 +110,80 @@ router.get('/', auth, async (req, res) => {
     }
     if (categoria) filtro.itens = { $elemMatch: { categoria } };
 
-    const pedidos = await Order.find(filtro).sort({ createdAt: -1 });
+    let pedidosQuery = Order.find(filtro).sort({ createdAt: -1 });
+    if (pagination) {
+      const [total, summaries, categoryTotals] = await Promise.all([
+        Order.countDocuments(filtro),
+        Order.aggregate([
+          { $match: filtro },
+          {
+            $set: {
+              _paid: {
+                $reduce: {
+                  input: { $ifNull: ['$pagamentos', []] },
+                  initialValue: 0,
+                  in: { $add: ['$$value', { $ifNull: ['$$this.valorRecebido', 0] }] },
+                },
+              },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalVendido: { $sum: { $ifNull: ['$total', 0] } },
+              totalPagoGeral: { $sum: '$_paid' },
+              totalEmAberto: {
+                $sum: {
+                  $cond: [
+                    { $in: ['$status', ['pendente', 'parcial']] },
+                    { $max: [0, { $subtract: [{ $ifNull: ['$total', 0] }, '$_paid'] }] },
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+        ]),
+        Order.aggregate([
+          { $match: filtro },
+          { $unwind: { path: '$itens', preserveNullAndEmptyArrays: false } },
+          {
+            $group: {
+              _id: { $ifNull: ['$itens.categoria', 'Sem categoria'] },
+              valor: {
+                $sum: {
+                  $multiply: [
+                    { $ifNull: ['$itens.precoUnitario', 0] },
+                    { $ifNull: ['$itens.pesoKg', { $ifNull: ['$itens.quantidade', 0] }] },
+                  ],
+                },
+              },
+            },
+          },
+          { $sort: { valor: -1 } },
+        ]),
+      ]);
+      const page = getEffectivePage(pagination.page, pagination.pageSize, total);
+      pedidosQuery = pedidosQuery
+        .skip((page - 1) * pagination.pageSize)
+        .limit(pagination.pageSize);
+      const pedidos = await pedidosQuery;
+      const summary = summaries[0] || { totalVendido: 0, totalPagoGeral: 0, totalEmAberto: 0 };
+      const porCategoria = categoryTotals.map((categoriaTotal) => ({
+        nome: categoriaTotal._id,
+        valor: Number(categoriaTotal.valor.toFixed(2)),
+      }));
+      return res.json(buildPage(pedidos, page, pagination.pageSize, total, {
+        summary: {
+          totalVendido: Number(summary.totalVendido.toFixed(2)),
+          totalPagoGeral: Number(summary.totalPagoGeral.toFixed(2)),
+          totalEmAberto: Number(summary.totalEmAberto.toFixed(2)),
+          porCategoria,
+        },
+      }));
+    }
+
+    const pedidos = await pedidosQuery;
     res.json(pedidos);
   } catch (err) {
     res.status(500).json({ msg: err.message });

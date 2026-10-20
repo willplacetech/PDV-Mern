@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import api from '../services/api.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { enviarMensagemWhatsApp } from '../services/whatsapp.js';
+import Pagination from '../components/Pagination.jsx';
+import useServerPagination from '../hooks/useServerPagination.js';
 
 
 const statusCor = {
@@ -23,114 +25,93 @@ const formaPagamentoLabel = {
 
 
 export default function ContasReceber() {
-  const [carregando, setCarregando] = useState(true);
-  const [pedidos, setPedidos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [clienteFiltro, setClienteFiltro] = useState('');
   const [statusFiltro, setStatusFiltro] = useState('pendente');
   const [inicio, setInicio] = useState('');
   const [fim, setFim] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [pagamentoModal, setPagamentoModal] = useState(null);
   const [pagamentoMultiploModal, setPagamentoMultiploModal] = useState(null);
   const [formPagamento, setFormPagamento] = useState({ tipo: 'credito_loja', valorRecebido: '', observacao: '' });
   const [formPagamentoMultiplo, setFormPagamentoMultiplo] = useState({ tipo: 'credito_loja', observacao: '' });
-  const [selecionados, setSelecionados] = useState(new Set());
+  const [selecionados, setSelecionados] = useState(new Map());
   const { showToast } = useToast();
+  const filtros = useMemo(() => ({
+    clienteId: clienteFiltro,
+    status: statusFiltro,
+    inicio,
+    fim,
+  }), [clienteFiltro, statusFiltro, inicio, fim]);
+  const list = useServerPagination('/orders', filtros, page, pageSize);
+  const pedidos = list.items;
 
 
-  useEffect(() => { carregarDados(); }, []);
-  useEffect(() => { 
-    carregarPedidos(); 
-    setSelecionados(new Set());
-  }, [clienteFiltro, statusFiltro, inicio, fim]);
+  useEffect(() => {
+    const carregarDados = async () => {
+      try {
+        const res = await api.get('/customers');
+        setClientes(res.data);
+      } catch {
+        showToast('Erro ao carregar clientes', 'error');
+      }
+    };
+    carregarDados();
+  }, [showToast]);
 
 
-  const carregarDados = async () => {
-    try {
-      const res = await api.get('/customers');
-      setClientes(res.data);
-    } catch { showToast('Erro ao carregar clientes', 'error'); }
-  };
-
-
-  const carregarPedidos = async () => {
-    try {
-      setCarregando(true);
-      const params = new URLSearchParams();
-      if (clienteFiltro) params.append('clienteId', clienteFiltro);
-      if (statusFiltro) params.append('status', statusFiltro);
-      if (inicio) params.append('inicio', inicio);
-      if (fim) params.append('fim', fim);
-
-      const res = await api.get(`/orders?${params}`);
-      setPedidos(res.data || []);
-    } catch { 
-      showToast('Erro ao carregar pedidos', 'error'); 
-      setPedidos([]);
-    } finally {
-      setCarregando(false);
-    }
+  const alterarFiltro = (setter, value) => {
+    setter(value);
+    setPage(1);
+    setSelecionados(new Map());
   };
 
 
   const totais = useMemo(() => {
-    let totalEmAberto = 0;
-    let totalBruto = 0;
-    let totalPagoGeral = 0;
-
-    if (!Array.isArray(pedidos) || pedidos.length === 0) {
-      return { totalEmAberto, totalBruto, totalPagoGeral };
-    }
-
-    pedidos.forEach(pedido => {
-      const valorTotal = parseFloat(pedido?.total) || 0;
-      totalBruto += valorTotal;
-
-      const valorPago = Array.isArray(pedido?.pagamentos)
-        ? pedido.pagamentos.reduce((soma, pg) => soma + (parseFloat(pg?.valorRecebido) || 0), 0)
-        : 0;
-      totalPagoGeral += valorPago;
-
-      const status = String(pedido?.status || '').toLowerCase();
-      if (status !== 'pago' && status !== 'cancelado') {
-        totalEmAberto += Math.max(0, valorTotal - valorPago);
-      }
-    });
-
-    return { totalEmAberto, totalBruto, totalPagoGeral };
-  }, [pedidos]);
+    return {
+      totalEmAberto: Number(list.summary?.totalEmAberto || 0),
+      totalBruto: Number(list.summary?.totalVendido || 0),
+      totalPagoGeral: Number(list.summary?.totalPagoGeral || 0),
+    };
+  }, [list.summary]);
 
 
   const toggleSelecionarTodos = () => {
-    const todosIds = new Set(pedidos.map(p => p._id));
-    if (selecionados.size === pedidos.length) {
-      setSelecionados(new Set());
-    } else {
-      setSelecionados(todosIds);
-    }
+    const todosSelecionados = pedidos.length > 0 && pedidos.every((pedido) => selecionados.has(pedido._id));
+    setSelecionados((atuais) => {
+      const proximos = new Map(atuais);
+      pedidos.forEach((pedido) => {
+        if (todosSelecionados) proximos.delete(pedido._id);
+        else proximos.set(pedido._id, pedido);
+      });
+      return proximos;
+    });
   };
 
 
   const toggleSelecionar = (id) => {
-    const proximo = new Set(selecionados);
-    if (proximo.has(id)) proximo.delete(id);
-    else proximo.add(id);
-    setSelecionados(proximo);
+    const pedido = pedidos.find((item) => item._id === id);
+    if (!pedido) return;
+    setSelecionados((atuais) => {
+      const proximos = new Map(atuais);
+      if (proximos.has(id)) proximos.delete(id);
+      else proximos.set(id, pedido);
+      return proximos;
+    });
   };
 
 
   // ✅ Calcular valor total a receber dos selecionados
   const valorTotalSelecionados = useMemo(() => {
-    return pedidos
-      .filter(p => selecionados.has(p._id))
-      .reduce((soma, pedido) => {
+    return Array.from(selecionados.values()).reduce((soma, pedido) => {
         const valorTotal = parseFloat(pedido?.total) || 0;
         const valorPago = Array.isArray(pedido?.pagamentos)
           ? pedido.pagamentos.reduce((s, pg) => s + (parseFloat(pg?.valorRecebido) || 0), 0)
           : 0;
         return soma + Math.max(0, valorTotal - valorPago);
       }, 0);
-  }, [pedidos, selecionados]);
+  }, [selecionados]);
 
 
   // ✅ Abrir modal de RECEBIMENTO MÚLTIPLO dos marcados
@@ -148,7 +129,7 @@ export default function ContasReceber() {
 
   // ✅ Registrar pagamento de TODOS os marcados
   const registrarPagamentoMultiplo = async () => {
-    const pedidosSelecionados = pedidos.filter(p => selecionados.has(p._id));
+    const pedidosSelecionados = Array.from(selecionados.values());
     let sucessos = 0;
     let falhas = 0;
 
@@ -172,8 +153,8 @@ export default function ContasReceber() {
     }
 
     setPagamentoMultiploModal(null);
-    setSelecionados(new Set());
-    carregarPedidos();
+    setSelecionados(new Map());
+    list.reload();
 
     if (sucessos > 0 && falhas === 0) {
       showToast(`✅ ${sucessos} pedido(s) recebido(s) com sucesso!`, 'success');
@@ -208,7 +189,8 @@ export default function ContasReceber() {
       showToast('✅ Pagamento registrado!', 'success');
       setPagamentoModal(null);
       setFormPagamento({ tipo: 'credito_loja', valorRecebido: '', observacao: '' });
-      carregarPedidos();
+      setSelecionados(new Map());
+      list.reload();
     } catch { showToast('Erro ao registrar pagamento', 'error'); }
   };
 
@@ -218,7 +200,8 @@ export default function ContasReceber() {
     try {
       await api.patch(`/orders/${pedido._id}/quitar`, {});
       showToast('✅ Pedido QUITADO!', 'success');
-      carregarPedidos();
+      setSelecionados(new Map());
+      list.reload();
     } catch { showToast('Erro ao quitar', 'error'); }
   };
 
@@ -392,17 +375,28 @@ Obrigado! 🙏`
 
 
   // ✅ Relatório completo do cliente
-  const gerarRelatorioCompleto = () => {
+  const gerarRelatorioCompleto = async () => {
     if (!clienteFiltro) return showToast('Selecione um cliente primeiro!', 'warning');
-    if (pedidos.length === 0) return showToast('Nenhum pedido encontrado', 'warning');
+    if (list.total === 0) return showToast('Nenhum pedido encontrado', 'warning');
+
+    let pedidosRelatorio;
+    try {
+      const params = new URLSearchParams(filtros);
+      const { data } = await api.get(`/orders?${params.toString()}`);
+      if (!Array.isArray(data)) throw new Error('Resposta do relatório inválida');
+      pedidosRelatorio = data;
+    } catch (error) {
+      console.error('Erro ao carregar o relatório do cliente:', error);
+      return showToast(error.response?.data?.msg || 'Erro ao carregar relatório', 'error');
+    }
 
     const data = new Date().toLocaleString('pt-BR');
     const clienteNome = clientes.find(c => c._id === clienteFiltro)?.nome || 'Cliente';
 
     const totaisRel = {
-      bruto: pedidos.reduce((s, p) => s + (parseFloat(p.total) || 0), 0),
-      pago: pedidos.reduce((s, p) => s + (Array.isArray(p.pagamentos) ? p.pagamentos.reduce((a, pg) => a + (parseFloat(pg.valorRecebido) || 0), 0) : 0), 0),
-      aberto: pedidos.reduce((s, p) => {
+      bruto: pedidosRelatorio.reduce((s, p) => s + (parseFloat(p.total) || 0), 0),
+      pago: pedidosRelatorio.reduce((s, p) => s + (Array.isArray(p.pagamentos) ? p.pagamentos.reduce((a, pg) => a + (parseFloat(pg.valorRecebido) || 0), 0) : 0), 0),
+      aberto: pedidosRelatorio.reduce((s, p) => {
         const st = String(p.status || '').toLowerCase();
         if (st === 'pago' || st === 'cancelado') return s;
         const tp = Array.isArray(p.pagamentos) ? p.pagamentos.reduce((a, pg) => a + (parseFloat(pg.valorRecebido) || 0), 0) : 0;
@@ -410,7 +404,7 @@ Obrigado! 🙏`
       }, 0)
     };
 
-    const pedidosHtml = pedidos.map(p => {
+    const pedidosHtml = pedidosRelatorio.map(p => {
       const totalPago = Array.isArray(p.pagamentos)
         ? p.pagamentos.reduce((ac, pg) => ac + (parseFloat(pg.valorRecebido) || 0), 0)
         : 0;
@@ -450,7 +444,7 @@ Obrigado! 🙏`
         <div class="linha"></div>
         <div><span class="bold">Data:</span> ${data}</div>
         <div><span class="bold">Cliente:</span> ${clienteNome}</div>
-        <div><span class="bold">Qtde Pedidos:</span> ${pedidos.length}</div>
+        <div><span class="bold">Qtde Pedidos:</span> ${pedidosRelatorio.length}</div>
         <div class="linha"></div>
         ${pedidosHtml}
         <div class="linha"></div>
@@ -489,7 +483,7 @@ Obrigado! 🙏`
       }}>
         <div>
           <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Cliente</label>
-          <select value={clienteFiltro} onChange={e => setClienteFiltro(e.target.value)} style={{
+          <select value={clienteFiltro} onChange={e => alterarFiltro(setClienteFiltro, e.target.value)} style={{
             width: '100%', padding: '10px', border: '1px solid var(--input-border)', borderRadius: 10
           }}>
             <option value="">Todos os clientes</option>
@@ -498,7 +492,7 @@ Obrigado! 🙏`
         </div>
         <div>
           <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Status</label>
-          <select value={statusFiltro} onChange={e => setStatusFiltro(e.target.value)} style={{
+          <select value={statusFiltro} onChange={e => alterarFiltro(setStatusFiltro, e.target.value)} style={{
             width: '100%', padding: '10px', border: '1px solid var(--input-border)', borderRadius: 10
           }}>
             <option value="">Todos</option>
@@ -509,13 +503,13 @@ Obrigado! 🙏`
         </div>
         <div>
           <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Data Início</label>
-          <input type="date" value={inicio} onChange={e => setInicio(e.target.value)} style={{
+          <input type="date" value={inicio} onChange={e => alterarFiltro(setInicio, e.target.value)} style={{
             width: '100%', padding: '10px', border: '1px solid var(--input-border)', borderRadius: 10
           }} />
         </div>
         <div>
           <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Data Fim</label>
-          <input type="date" value={fim} onChange={e => setFim(e.target.value)} style={{
+          <input type="date" value={fim} onChange={e => alterarFiltro(setFim, e.target.value)} style={{
             width: '100%', padding: '10px', border: '1px solid var(--input-border)', borderRadius: 10
           }} />
         </div>
@@ -530,10 +524,10 @@ Obrigado! 🙏`
           <div>
             <div style={{ fontSize: 13, opacity: 0.9 }}>Total a Receber</div>
             <div style={{ fontSize: 28, fontWeight: 700 }}>
-              {carregando ? '⏳ Carregando...' : `R$ ${Number(totais?.totalEmAberto ?? 0).toFixed(2).replace('.', ',')}`}
+              {list.loading ? '⏳ Carregando...' : `R$ ${Number(totais?.totalEmAberto ?? 0).toFixed(2).replace('.', ',')}`}
             </div>
             <div style={{ fontSize: 11, opacity: 0.8, marginTop: 4 }}>
-              {carregando ? 'Aguardando dados...' : `Bruto: R$ ${Number(totais?.totalBruto ?? 0).toFixed(2).replace('.', ',')} | Pago: R$ ${Number(totais?.totalPagoGeral ?? 0).toFixed(2).replace('.', ',')}`}
+              {list.loading ? 'Aguardando dados...' : `Bruto: R$ ${Number(totais?.totalBruto ?? 0).toFixed(2).replace('.', ',')} | Pago: R$ ${Number(totais?.totalPagoGeral ?? 0).toFixed(2).replace('.', ',')}`}
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -543,12 +537,12 @@ Obrigado! 🙏`
                 onClick={toggleSelecionarTodos}
                 style={{
                   padding: '6px 12px', 
-                  background: selecionados.size === pedidos.length && pedidos.length > 0 ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.2)', 
+                  background: pedidos.every((pedido) => selecionados.has(pedido._id)) ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.2)',
                   color: '#fff', border: '1px solid rgba(255,255,255,.3)', borderRadius: 8,
                   fontSize: 12, fontWeight: 600, cursor: 'pointer'
                 }}
               >
-                {selecionados.size === pedidos.length && pedidos.length > 0 ? '✓ Desmarcar Todos' : '☑ Selecionar Todos'}
+                {pedidos.every((pedido) => selecionados.has(pedido._id)) ? '✓ Desmarcar Todos desta página' : '☑ Selecionar Todos desta página'}
               </button>
             )}
             <div style={{ display: 'flex', gap: 6 }}>
@@ -579,11 +573,17 @@ Obrigado! 🙏`
       </div>
 
       {/* LISTA DE PEDIDOS */}
-      {pedidos.length === 0 ? (
+      {list.error && <p role="alert" style={{ color: 'var(--error-bg)', fontSize: 13 }}>{list.error}</p>}
+      {list.loading ? (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', borderRadius: 12 }}>
-          {carregando ? 'Carregando pedidos...' : 'Nenhum pedido encontrado'}
+          Carregando pedidos...
+        </div>
+      ) : list.total === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', borderRadius: 12 }}>
+          Nenhum pedido encontrado
         </div>
       ) : (
+        <>
         <div style={{ display: 'grid', gap: 12 }}>
           {pedidos.map(pedido => {
             const st = statusCor[pedido.status];
@@ -733,6 +733,15 @@ Obrigado! 🙏`
             );
           })}
         </div>
+        <Pagination
+          page={list.page}
+          pageSize={list.pageSize}
+          total={list.total}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => { setPage(1); setPageSize(size); }}
+          disabled={list.loading}
+        />
+        </>
       )}
 
       {/* ✅ MODAL DE RECEBIMENTO MÚLTIPLO (para marcados) */}

@@ -3,8 +3,16 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
 const Customer = require('../models/Customer');
+const { buildPage, getEffectivePage, parsePagination } = require('../services/pagination');
 
 const limparDocumento = (valor) => String(valor || '').replace(/\D/g, '');
+const documentoNormalizado = (campo) => ({
+  $regexReplace: {
+    input: { $ifNull: [`$${campo}`, ''] },
+    regex: '\\D',
+    replacement: '',
+  },
+});
 const normalizarEndereco = valor => valor && typeof valor === 'object' ? valor : String(valor || '').trim();
 const validarDocumento = (valor) => {
   const digitos = limparDocumento(valor);
@@ -30,14 +38,17 @@ const validarDocumento = (valor) => {
 router.get('/', auth, async (req, res) => {
   try {
     const { search } = req.query;
+    const pagination = parsePagination(req.query);
+    if (pagination?.error) return res.status(400).json({ msg: pagination.error });
     let query = {};
 
     if (search) {
       const documentoBusca = limparDocumento(search);
+      const termo = String(search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query = {
         $or: [
-          { nome: { $regex: search, $options: 'i' } },
-          { telefone: { $regex: search, $options: 'i' } },
+          { nome: { $regex: termo, $options: 'i' } },
+          { telefone: { $regex: termo, $options: 'i' } },
           ...(documentoBusca ? [
             { documento: { $regex: documentoBusca } },
             { cpf: { $regex: documentoBusca } },
@@ -46,7 +57,18 @@ router.get('/', auth, async (req, res) => {
       };
     }
 
-    const customers = await Customer.find(query).sort({ nome: 1 });
+    let customersQuery = Customer.find(query).sort({ nome: 1, _id: 1 });
+    if (pagination) {
+      const total = await Customer.countDocuments(query);
+      const page = getEffectivePage(pagination.page, pagination.pageSize, total);
+      customersQuery = customersQuery
+        .skip((page - 1) * pagination.pageSize)
+        .limit(pagination.pageSize);
+      const customers = await customersQuery;
+      return res.json(buildPage(customers, page, pagination.pageSize, total));
+    }
+
+    const customers = await customersQuery;
     res.json(customers);
   } catch (err) {
     console.error(err.message);
@@ -71,6 +93,17 @@ router.post(
       const documentoLimpo = limparDocumento(documento);
       if (!validarDocumento(documentoLimpo)) {
         return res.status(400).json({ msg: 'CPF/CNPJ inválido. Verifique os dígitos.' });
+      }
+      const documentoDuplicado = await Customer.exists({
+        $expr: {
+          $or: [
+            { $eq: [documentoNormalizado('documento'), documentoLimpo] },
+            { $eq: [documentoNormalizado('cpf'), documentoLimpo] },
+          ],
+        },
+      });
+      if (documentoDuplicado) {
+        return res.status(400).json({ msg: 'Este documento já está cadastrado.' });
       }
 
       const customer = new Customer({
@@ -108,6 +141,18 @@ router.put('/:id', auth, async (req, res) => {
       const documentoLimpo = limparDocumento(documento);
       if (!validarDocumento(documentoLimpo)) {
         return res.status(400).json({ msg: 'CPF/CNPJ inválido. Verifique os dígitos.' });
+      }
+      const documentoDuplicado = await Customer.exists({
+        _id: { $ne: req.params.id },
+        $expr: {
+          $or: [
+            { $eq: [documentoNormalizado('documento'), documentoLimpo] },
+            { $eq: [documentoNormalizado('cpf'), documentoLimpo] },
+          ],
+        },
+      });
+      if (documentoDuplicado) {
+        return res.status(400).json({ msg: 'Este documento já está cadastrado.' });
       }
       updateFields.documento = documentoLimpo;
       updateFields.tipoDocumento = tipoDocumento || (documentoLimpo.length === 14 ? 'CNPJ' : 'CPF');

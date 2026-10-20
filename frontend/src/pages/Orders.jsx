@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../services/api.jsx';
+import Pagination from '../components/Pagination.jsx';
+import useServerPagination from '../hooks/useServerPagination.js';
 
 export default function Orders() {
-  const [pedidos, setPedidos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [selecionado, setSelecionado] = useState(null);
   const [filtroStatus, setFiltroStatus] = useState('todos');
@@ -11,9 +12,19 @@ export default function Orders() {
   const [inicio, setInicio] = useState('');
   const [fim, setFim] = useState('');
   const [valorConferido, setValorConferido] = useState('');
-  const [carregando, setCarregando] = useState(true);
   const [cancelando, setCancelando] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const filtros = useMemo(() => ({
+    status: filtroStatus === 'todos' ? '' : filtroStatus,
+    clienteId: clienteFiltro,
+    categoria,
+    inicio: inicio && fim ? inicio : '',
+    fim: inicio && fim ? fim : '',
+  }), [filtroStatus, clienteFiltro, categoria, inicio, fim]);
+  const list = useServerPagination('/orders', filtros, page, pageSize);
+  const pedidos = list.items;
 
   useEffect(() => {
     const carregarClientes = async () => {
@@ -28,31 +39,6 @@ export default function Orders() {
     carregarClientes();
   }, []);
 
-  const carregar = async () => {
-    setCarregando(true);
-    try {
-      const params = new URLSearchParams();
-      if (filtroStatus !== 'todos') params.set('status', filtroStatus);
-      if (clienteFiltro) params.set('clienteId', clienteFiltro);
-      if (categoria) params.set('categoria', categoria);
-      if (inicio && fim) { params.set('inicio', inicio); params.set('fim', fim); }
-      const url = `/orders${params.toString() ? `?${params.toString()}` : ''}`;
-      const res = await api.get(url);
-      setPedidos(res.data || []);
-    } catch (err) {
-      console.error('Erro ao carregar pedidos:', err);
-      setPedidos([]);
-    } finally {
-      setCarregando(false);
-    }
-  };
-
-  // O histórico recarrega quando qualquer filtro muda.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    carregar();
-  }, [filtroStatus, clienteFiltro, categoria, inicio, fim]); // eslint-disable-line react-hooks/exhaustive-deps
-
   // ✅ Função de cancelamento - AJUSTADA PARA SUA ROTA
   const cancelarPedido = async (pedidoId) => {
     if (!window.confirm('Tem certeza que deseja cancelar este pedido?')) {
@@ -65,7 +51,7 @@ export default function Orders() {
       await api.patch(`/orders/${pedidoId}/cancelar`);
       alert('✅ Pedido cancelado com sucesso!');
       setSelecionado(null);
-      carregar(); // Recarrega a lista para atualizar o status
+      list.reload();
     } catch (err) {
       console.error('Erro ao cancelar pedido:', err);
       // ✅ Backend retorna { msg: '...' }
@@ -90,7 +76,7 @@ export default function Orders() {
       await api.delete(`/orders/${pedidoId}`);
       alert('✅ Pedido excluído com sucesso!');
       setSelecionado(null);
-      carregar();
+      list.reload();
     } catch (err) {
       console.error('Erro ao excluir pedido:', err);
       alert(err.response?.data?.msg || '❌ Erro ao excluir pedido. Tente novamente.');
@@ -100,36 +86,34 @@ export default function Orders() {
   };
 
   const totalVendido = useMemo(() => {
-    if (!Array.isArray(pedidos) || pedidos.length === 0) return 0;
+    return Number(list.summary?.totalVendido || 0);
+  }, [list.summary]);
 
-    const soma = pedidos.reduce((ac, p) => {
-      const valor = parseFloat(
-        p.total || 
-        p.valorTotal || 
-        p.totalPedido || 
-        p.valor || 
-        p.subtotal || 
-        0
-      ) || 0;
-      return ac + valor;
-    }, 0);
-
-    return soma;
-  }, [pedidos]);
-
-  const vendasPorCategoria = useMemo(() => pedidos.reduce((resumo, pedido) => {
-    (pedido.itens || []).forEach(item => {
-      const nome = item.categoria || 'Sem categoria';
-      resumo[nome] = (resumo[nome] || 0) + Number(item.precoUnitario || 0) * Number(item.pesoKg || item.quantidade || 0);
-    });
-    return resumo;
-  }, {}), [pedidos]);
+  const vendasPorCategoria = useMemo(() => (
+    (list.summary?.porCategoria || []).reduce((resumo, item) => {
+      resumo[item.nome] = item.valor;
+      return resumo;
+    }, {})
+  ), [list.summary]);
   const diferencaCaixa = valorConferido === '' ? null : Number(valorConferido) - totalVendido;
 
-  const gerarRelatorio = () => {
+  const gerarRelatorio = async () => {
+    let pedidosRelatorio;
+    try {
+      const params = new URLSearchParams(filtros);
+      const { data } = await api.get(`/orders?${params.toString()}`);
+      if (!Array.isArray(data)) throw new Error('Resposta do relatório inválida');
+      pedidosRelatorio = data;
+    } catch (error) {
+      console.error('Erro ao carregar pedidos para o relatório:', error);
+      alert(error.response?.data?.msg || 'Não foi possível carregar o relatório de pedidos.');
+      return;
+    }
+
     const nomeCliente = clientes.find(c => c._id === clienteFiltro)?.nome || 'Todos os clientes';
-    const linhas = pedidos.length > 0
-      ? pedidos.map((pedido) => `
+    const totalRelatorio = pedidosRelatorio.reduce((soma, pedido) => soma + Number(pedido.total || 0), 0);
+    const linhas = pedidosRelatorio.length > 0
+      ? pedidosRelatorio.map((pedido) => `
           <tr>
             <td>#${pedido.numero}</td>
             <td>${new Date(pedido.createdAt).toLocaleDateString('pt-BR')}</td>
@@ -173,10 +157,10 @@ export default function Orders() {
           <div class="meta">
             <div>Período: ${inicio || 'Qualquer data'}</div>
             <div>Até: ${fim || 'Último registro'}</div>
-            <div>Pedidos: <strong>${pedidos.length}</strong></div>
+            <div>Pedidos: <strong>${pedidosRelatorio.length}</strong></div>
             <div>Status: ${filtroStatus === 'todos' ? 'Todos' : filtroStatus}</div>
             <div>Categoria: ${categoria || 'Todas'}</div>
-            <div>Total: <strong>R$ ${totalVendido.toFixed(2).replace('.', ',')}</strong></div>
+            <div>Total: <strong>R$ ${totalRelatorio.toFixed(2).replace('.', ',')}</strong></div>
           </div>
           <table>
             <thead>
@@ -191,7 +175,7 @@ export default function Orders() {
             </thead>
             <tbody>${linhas}</tbody>
           </table>
-          <div class="resumo">Total vendido no filtro: R$ ${totalVendido.toFixed(2).replace('.', ',')}</div>
+          <div class="resumo">Total vendido no filtro: R$ ${totalRelatorio.toFixed(2).replace('.', ',')}</div>
         </body>
       </html>
     `);
@@ -230,7 +214,7 @@ export default function Orders() {
         ].map(item => (
           <button
             key={item.valor}
-            onClick={() => setFiltroStatus(item.valor)}
+            onClick={() => { setFiltroStatus(item.valor); setPage(1); }}
             style={{
               padding: '6px 14px', borderRadius: '20px', border: '1px solid var(--border-color)',
               fontSize: '12px', fontWeight: filtroStatus === item.valor ? '700' : '500',
@@ -245,15 +229,15 @@ export default function Orders() {
       </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
-        <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>De <input type="date" value={inicio} onChange={e => setInicio(e.target.value)} /></label>
-        <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Até <input type="date" value={fim} onChange={e => setFim(e.target.value)} /></label>
-        <select value={clienteFiltro} onChange={e => setClienteFiltro(e.target.value)} style={{ padding: '7px 10px', borderRadius: 8, minWidth: 180 }}>
+        <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>De <input type="date" value={inicio} onChange={e => { setInicio(e.target.value); setPage(1); }} /></label>
+        <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Até <input type="date" value={fim} onChange={e => { setFim(e.target.value); setPage(1); }} /></label>
+        <select value={clienteFiltro} onChange={e => { setClienteFiltro(e.target.value); setPage(1); }} style={{ padding: '7px 10px', borderRadius: 8, minWidth: 180 }}>
           <option value="">Todos os clientes</option>
           {clientes.map(cliente => (
             <option key={cliente._id} value={cliente._id}>{cliente.nome}</option>
           ))}
         </select>
-        <select value={categoria} onChange={e => setCategoria(e.target.value)} style={{ padding: '7px 10px', borderRadius: 8 }}>
+        <select value={categoria} onChange={e => { setCategoria(e.target.value); setPage(1); }} style={{ padding: '7px 10px', borderRadius: 8 }}>
           <option value="">Todas as categorias</option>
           {['Frios', 'Padaria', 'Hortifruti', 'Açougue', 'Bebidas', 'Limpeza', 'Mercearia'].map(item => <option key={item} value={item}>{item}</option>)}
         </select>
@@ -280,13 +264,13 @@ export default function Orders() {
           <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
             Pedidos
             <span style={{ background: 'rgba(234,88,12,.14)', color: '#ea580c', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
-              {pedidos.length}
+              {list.total}
             </span>
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Total vendido:</span>
             <span style={{ fontWeight: 700, color: 'var(--success-bg)', fontSize: 16 }}>
-              {carregando ? (
+              {list.loading ? (
                 <span style={{ color: 'var(--text-tertiary)' }}>Carregando...</span>
               ) : (
                 `R$ ${totalVendido.toFixed(2).replace('.', ',')}`
@@ -295,11 +279,13 @@ export default function Orders() {
           </div>
         </div>
 
-        {carregando ? (
+        {list.loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
             ⏳ Carregando pedidos...
           </div>
         ) : (
+          <>
+            {list.error && <p role="alert" style={{ color: 'var(--error-bg)', fontSize: 13 }}>{list.error}</p>}
           <div style={{ overflowX: 'auto', margin: '0 -16px', padding: '0 16px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 650, background: 'var(--bg-secondary)' }}>
               <thead>
@@ -312,7 +298,7 @@ export default function Orders() {
               <tbody>
                 {pedidos.length === 0 ? (
                   <tr><td colSpan={7} style={{ textAlign: 'center', padding: 24, color: 'var(--text-secondary)', fontSize: 13 }}>Nenhum pedido realizado</td></tr>
-                ) : pedidos.slice(0, 100).map(p => {
+                ) : pedidos.map(p => {
                   const statusInfo = getStatusInfo(p.status);
                   const valorTotal = Number(p?.total || p?.valorTotal || p?.subtotal || 0);
                   return (
@@ -347,6 +333,15 @@ export default function Orders() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={list.page}
+            pageSize={list.pageSize}
+            total={list.total}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => { setPage(1); setPageSize(size); }}
+            disabled={list.loading}
+          />
+          </>
         )}
       </div>
 
