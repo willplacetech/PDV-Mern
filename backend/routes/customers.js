@@ -7,7 +7,7 @@ const { buildPage, getEffectivePage, parsePagination } = require('../services/pa
 
 const limparDocumento = (valor) => String(valor || '').replace(/\D/g, '');
 // shortcut: $regexReplace is unavailable in this MongoDB tier; documento/cpf are stored digit-only, so match by equality
-const documentoDuplicadoQuery = (extra = {}) => ({
+const documentoDuplicadoQuery = (documentoLimpo, extra = {}) => ({
   $or: [
     { documento: documentoLimpo },
     { cpf: documentoLimpo },
@@ -95,7 +95,7 @@ router.post(
       if (!validarDocumento(documentoLimpo)) {
         return res.status(400).json({ msg: 'CPF/CNPJ inválido. Verifique os dígitos.' });
       }
-      const documentoDuplicado = await Customer.exists(documentoDuplicadoQuery());
+      const documentoDuplicado = await Customer.exists(documentoDuplicadoQuery(documentoLimpo));
       if (documentoDuplicado) {
         return res.status(400).json({ msg: 'Este documento já está cadastrado.' });
       }
@@ -136,7 +136,7 @@ router.put('/:id', auth, async (req, res) => {
       if (!validarDocumento(documentoLimpo)) {
         return res.status(400).json({ msg: 'CPF/CNPJ inválido. Verifique os dígitos.' });
       }
-      const documentoDuplicado = await Customer.exists(documentoDuplicadoQuery({ _id: { $ne: req.params.id } }));
+      const documentoDuplicado = await Customer.exists(documentoDuplicadoQuery(documentoLimpo, { _id: { $ne: req.params.id } }));
       if (documentoDuplicado) {
         return res.status(400).json({ msg: 'Este documento já está cadastrado.' });
       }

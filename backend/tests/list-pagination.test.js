@@ -12,6 +12,11 @@ const getHandler = (router) => (
     .route.stack.at(-1).handle
 );
 
+const getMutationHandler = (router, method, path = '/') => (
+  router.stack.find((layer) => layer.route?.path === path && layer.route.methods[method])
+    .route.stack.at(-1).handle
+);
+
 const createQuery = (items) => {
   let skip = 0;
   let limit = items.length;
@@ -79,6 +84,68 @@ test('customer route keeps the legacy array contract when pagination is omitted'
   await getHandler(customersRouter)({ query: {} }, response);
 
   assert.deepEqual(response.body, customers);
+});
+
+test('customer creation checks duplicate documents without a scope error', async (t) => {
+  const originalExists = Customer.exists;
+  const originalSave = Customer.prototype.save;
+  t.after(() => {
+    Customer.exists = originalExists;
+    Customer.prototype.save = originalSave;
+  });
+  let duplicateQuery;
+  Customer.exists = async (query) => {
+    duplicateQuery = query;
+    return null;
+  };
+  Customer.prototype.save = async function save() { return this; };
+
+  const response = createResponse();
+  await getMutationHandler(customersRouter, 'post')({
+    body: {
+      nome: 'Cliente de teste',
+      documento: '52998224725',
+    },
+    user: { id: '64c13ab08edf48a008793cac' },
+  }, response);
+
+  assert.equal(response.statusCode, 201);
+  assert.deepEqual(duplicateQuery, {
+    $or: [
+      { documento: '52998224725' },
+      { cpf: '52998224725' },
+    ],
+  });
+});
+
+test('customer updates exclude the current customer from duplicate checks', async (t) => {
+  const originalExists = Customer.exists;
+  const originalFindByIdAndUpdate = Customer.findByIdAndUpdate;
+  t.after(() => {
+    Customer.exists = originalExists;
+    Customer.findByIdAndUpdate = originalFindByIdAndUpdate;
+  });
+  let duplicateQuery;
+  Customer.exists = async (query) => {
+    duplicateQuery = query;
+    return null;
+  };
+  Customer.findByIdAndUpdate = async () => ({ _id: 'customer-1' });
+
+  const response = createResponse();
+  await getMutationHandler(customersRouter, 'put', '/:id')({
+    body: { documento: '52998224725' },
+    params: { id: 'customer-1' },
+  }, response);
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(duplicateQuery, {
+    $or: [
+      { documento: '52998224725' },
+      { cpf: '52998224725' },
+    ],
+    _id: { $ne: 'customer-1' },
+  });
 });
 
 test('product route keeps the legacy array contract when pagination is omitted', async (t) => {
