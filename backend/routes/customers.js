@@ -6,12 +6,13 @@ const Customer = require('../models/Customer');
 const { buildPage, getEffectivePage, parsePagination } = require('../services/pagination');
 
 const limparDocumento = (valor) => String(valor || '').replace(/\D/g, '');
-const documentoNormalizado = (campo) => ({
-  $regexReplace: {
-    input: { $ifNull: [`$${campo}`, ''] },
-    regex: '\\D',
-    replacement: '',
-  },
+// shortcut: $regexReplace is unavailable in this MongoDB tier; documento/cpf are stored digit-only, so match by equality
+const documentoDuplicadoQuery = (extra = {}) => ({
+  $or: [
+    { documento: documentoLimpo },
+    { cpf: documentoLimpo },
+  ],
+  ...extra,
 });
 const normalizarEndereco = valor => valor && typeof valor === 'object' ? valor : String(valor || '').trim();
 const validarDocumento = (valor) => {
@@ -94,14 +95,7 @@ router.post(
       if (!validarDocumento(documentoLimpo)) {
         return res.status(400).json({ msg: 'CPF/CNPJ inválido. Verifique os dígitos.' });
       }
-      const documentoDuplicado = await Customer.exists({
-        $expr: {
-          $or: [
-            { $eq: [documentoNormalizado('documento'), documentoLimpo] },
-            { $eq: [documentoNormalizado('cpf'), documentoLimpo] },
-          ],
-        },
-      });
+      const documentoDuplicado = await Customer.exists(documentoDuplicadoQuery());
       if (documentoDuplicado) {
         return res.status(400).json({ msg: 'Este documento já está cadastrado.' });
       }
@@ -142,15 +136,7 @@ router.put('/:id', auth, async (req, res) => {
       if (!validarDocumento(documentoLimpo)) {
         return res.status(400).json({ msg: 'CPF/CNPJ inválido. Verifique os dígitos.' });
       }
-      const documentoDuplicado = await Customer.exists({
-        _id: { $ne: req.params.id },
-        $expr: {
-          $or: [
-            { $eq: [documentoNormalizado('documento'), documentoLimpo] },
-            { $eq: [documentoNormalizado('cpf'), documentoLimpo] },
-          ],
-        },
-      });
+      const documentoDuplicado = await Customer.exists(documentoDuplicadoQuery({ _id: { $ne: req.params.id } }));
       if (documentoDuplicado) {
         return res.status(400).json({ msg: 'Este documento já está cadastrado.' });
       }
