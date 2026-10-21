@@ -19,7 +19,7 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ msg: 'Usuário ou senha inválidos' });
   }
 
-  const user = { id: 'mock-admin', username: 'admin', role: 'admin' };
+  const user = { id: '000000000000000000000001', username: 'admin', role: 'admin' };
   res.json({ user });
 });
 

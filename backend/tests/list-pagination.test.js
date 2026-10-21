@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const Customer = require('../models/Customer');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
+const auth = require('../middleware/auth');
 const customersRouter = require('../routes/customers');
 const productsRouter = require('../routes/products');
 const ordersRouter = require('../routes/orders');
@@ -98,18 +99,23 @@ test('customer creation checks duplicate documents without a scope error', async
     duplicateQuery = query;
     return null;
   };
-  Customer.prototype.save = async function save() { return this; };
+  Customer.prototype.save = async function save() {
+    assert.equal(this.validateSync(), undefined);
+    return this;
+  };
 
   const response = createResponse();
-  await getMutationHandler(customersRouter, 'post')({
+  const request = {
     body: {
       nome: 'Cliente de teste',
       documento: '52998224725',
     },
-    user: { id: '64c13ab08edf48a008793cac' },
-  }, response);
+  };
+  auth(request, {}, () => {});
+  await getMutationHandler(customersRouter, 'post')(request, response);
 
   assert.equal(response.statusCode, 201);
+  assert.equal(request.user.id, '000000000000000000000001');
   assert.deepEqual(duplicateQuery, {
     $or: [
       { documento: '52998224725' },
