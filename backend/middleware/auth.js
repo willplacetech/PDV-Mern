@@ -1,4 +1,4 @@
 module.exports = function (req, res, next) {
-  req.user = { username: 'operador' };
+  req.user = { id: 'mock-admin', username: 'admin', role: 'admin' };
   next();
 };
