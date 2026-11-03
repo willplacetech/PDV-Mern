@@ -407,22 +407,12 @@ Obrigado! 🙏`
     }
 
     const totalEmAberto = pedidosPendentes.reduce((soma, item) => soma + item.falta, 0);
-    const detalhesPendencias = pedidosPendentes.map(({ pedido, falta }) => {
-      const data = new Date(pedido.createdAt).toLocaleDateString('pt-BR');
-      return [
-        `• Pedido #${pedido.numero} — ${data}`,
-        `  *Valor pendente: R$ ${falta.toFixed(2).replace('.', ',')}*`,
-      ].join('\n');
-    }).join('\n\n');
-
     const texto = [
       `Olá, ${cliente.nome}!`,
       '',
-      '*Resumo das suas pendências*',
+      'Resumo das suas pendências',
       '',
-      detalhesPendencias,
-      '',
-      `*Total em aberto: R$ ${totalEmAberto.toFixed(2).replace('.', ',')}*`,
+      `Total em aberto: R$ ${totalEmAberto.toFixed(2).replace('.', ',')}`,
       '',
       'Em caso de dúvidas, entre em contato conosco.',
     ].join('\n');
