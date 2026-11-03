@@ -374,99 +374,64 @@ Obrigado! 🙏`
   };
 
 
-  // ✅ Relatório completo do cliente
-  const gerarRelatorioCompleto = async () => {
+  const enviarPendenciasCompletas = async () => {
     if (!clienteFiltro) return showToast('Selecione um cliente primeiro!', 'warning');
-    if (list.total === 0) return showToast('Nenhum pedido encontrado', 'warning');
-
-    let pedidosRelatorio;
-    try {
-      const params = new URLSearchParams(filtros);
-      const { data } = await api.get(`/orders?${params.toString()}`);
-      if (!Array.isArray(data)) throw new Error('Resposta do relatório inválida');
-      pedidosRelatorio = data;
-    } catch (error) {
-      console.error('Erro ao carregar o relatório do cliente:', error);
-      return showToast(error.response?.data?.msg || 'Erro ao carregar relatório', 'error');
+    const cliente = clientes.find((item) => item._id === clienteFiltro);
+    if (!cliente?.telefone?.trim()) {
+      return showToast('Este cliente não possui telefone cadastrado', 'warning');
     }
 
-    const data = new Date().toLocaleString('pt-BR');
-    const clienteNome = clientes.find(c => c._id === clienteFiltro)?.nome || 'Cliente';
+    let pedidosCliente;
+    try {
+      const { data } = await api.get('/orders', { params: { clienteId: clienteFiltro } });
+      if (!Array.isArray(data)) throw new Error('Resposta das pendências inválida');
+      pedidosCliente = data;
+    } catch (error) {
+      console.error('Erro ao carregar as pendências do cliente:', error);
+      return showToast(error.response?.data?.msg || 'Erro ao carregar pendências', 'error');
+    }
 
-    const totaisRel = {
-      bruto: pedidosRelatorio.reduce((s, p) => s + (parseFloat(p.total) || 0), 0),
-      pago: pedidosRelatorio.reduce((s, p) => s + (Array.isArray(p.pagamentos) ? p.pagamentos.reduce((a, pg) => a + (parseFloat(pg.valorRecebido) || 0), 0) : 0), 0),
-      aberto: pedidosRelatorio.reduce((s, p) => {
-        const st = String(p.status || '').toLowerCase();
-        if (st === 'pago' || st === 'cancelado') return s;
-        const tp = Array.isArray(p.pagamentos) ? p.pagamentos.reduce((a, pg) => a + (parseFloat(pg.valorRecebido) || 0), 0) : 0;
-        return s + Math.max(0, parseFloat(p.total) - tp);
-      }, 0)
-    };
+    const pedidosPendentes = pedidosCliente
+      .filter((pedido) => ['pendente', 'parcial'].includes(String(pedido.status).toLowerCase()))
+      .map((pedido) => {
+        const total = Number(pedido.total) || 0;
+        const pago = Array.isArray(pedido.pagamentos)
+          ? pedido.pagamentos.reduce((soma, pagamento) => soma + (Number(pagamento.valorRecebido) || 0), 0)
+          : 0;
+        return { pedido, falta: Math.max(0, total - pago) };
+      })
+      .filter(({ falta }) => falta > 0);
 
-    const pedidosHtml = pedidosRelatorio.map(p => {
-      const totalPago = Array.isArray(p.pagamentos)
-        ? p.pagamentos.reduce((ac, pg) => ac + (parseFloat(pg.valorRecebido) || 0), 0)
-        : 0;
-      const falta = Math.max(0, parseFloat(p.total) - totalPago);
-      
-      return `
-        <div style="border-bottom: 1px dashed #000; padding: 6px 0;">
-          <div style="display:flex; justify-content:space-between; font-weight:bold;">
-            <span>#${p.numero} - ${p.clienteNome}</span>
-            <span>R$ ${parseFloat(p.total).toFixed(2).replace('.',',')}</span>
-          </div>
-          <div style="font-size:10px;">
-            Status: ${statusCor[p.status]?.label || p.status} | 
-            ${falta > 0 ? `Falta: R$ ${falta.toFixed(2).replace('.',',')}` : 'Quitado'}
-          </div>
-        </div>
-      `;
-    }).join('');
+    if (pedidosPendentes.length === 0) {
+      return showToast('Este cliente não possui pendências em aberto', 'warning');
+    }
 
-    const relatorio = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Relatório Completo - ${clienteNome}</title>
-        <style>
-          * { font-family: 'Courier New', monospace; font-size: 12px; }
-          body { width: 76mm; margin: 0; padding: 4mm; }
-          .center { text-align: center; }
-          .bold { font-weight: bold; }
-          .linha { border-top: 2px dashed #000; margin: 8px 0; }
-          .total { font-size: 14px; font-weight: bold; border-top: 2px solid #000; padding-top: 8px; margin-top: 8px; }
-          @media print { @page { margin: 0; size: 80mm auto; } }
-        </style>
-      </head>
-      <body>
-        <div class="center bold" style="font-size:14px;">RELATÓRIO COMPLETO DO CLIENTE</div>
-        <div class="linha"></div>
-        <div><span class="bold">Data:</span> ${data}</div>
-        <div><span class="bold">Cliente:</span> ${clienteNome}</div>
-        <div><span class="bold">Qtde Pedidos:</span> ${pedidosRelatorio.length}</div>
-        <div class="linha"></div>
-        ${pedidosHtml}
-        <div class="linha"></div>
-        <div class="total" style="display:flex; justify-content:space-between;">
-          <span>Total Bruto:</span>
-          <span>R$ ${totaisRel.bruto.toFixed(2).replace('.',',')}</span>
-        </div>
-        <div style="display:flex; justify-content:space-between; color:#16a34a;">
-          <span>Total Pago:</span>
-          <span>R$ ${totaisRel.pago.toFixed(2).replace('.',',')}</span>
-        </div>
-        <div class="total" style="display:flex; justify-content:space-between; color:#c2410c;">
-          <span>TOTAL A RECEBER:</span>
-          <span>R$ ${totaisRel.aberto.toFixed(2).replace('.',',')}</span>
-        </div>
-        <script>window.onload=()=>{print();close()}</script>
-      </body>
-      </html>
-    `;
-    const janela = window.open('', '_blank', 'width=350,height=600');
-    janela.document.write(relatorio);
-    janela.document.close();
+    const totalEmAberto = pedidosPendentes.reduce((soma, item) => soma + item.falta, 0);
+    const detalhesPendencias = pedidosPendentes.map(({ pedido, falta }) => {
+      const data = new Date(pedido.createdAt).toLocaleDateString('pt-BR');
+      const totalPago = (Number(pedido.total) || 0) - falta;
+      return [
+        `• Pedido #${pedido.numero} — ${data}`,
+        `  Total: R$ ${(Number(pedido.total) || 0).toFixed(2).replace('.', ',')}`,
+        `  Pago: R$ ${totalPago.toFixed(2).replace('.', ',')}`,
+        `  *Em aberto: R$ ${falta.toFixed(2).replace('.', ',')}*`,
+      ].join('\n');
+    }).join('\n\n');
+
+    const texto = [
+      `Olá, ${cliente.nome}!`,
+      '',
+      '*Resumo das suas pendências*',
+      '',
+      detalhesPendencias,
+      '',
+      `*Total em aberto: R$ ${totalEmAberto.toFixed(2).replace('.', ',')}*`,
+      '',
+      'Em caso de dúvidas, entre em contato conosco.',
+    ].join('\n');
+
+    enviarMensagemWhatsApp(texto, cliente.telefone);
+    showToast('Resumo das pendências aberto no WhatsApp', 'success');
   };
 
 
@@ -555,7 +520,7 @@ Obrigado! 🙏`
               
               {/* ✅ Arquivo Completo - SÓ aparece quando cliente selecionado */}
               {clienteFiltro && (
-                <button onClick={gerarRelatorioCompleto} style={{
+                <button onClick={enviarPendenciasCompletas} style={{
                   padding: '6px 12px', background: 'rgba(22,163,74,.9)', color: '#fff',
                   border: 'none', borderRadius: 8,
                   fontSize: 12, fontWeight: 600, cursor: 'pointer'
