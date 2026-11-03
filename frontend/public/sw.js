@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mercado-nascimento-v1';
+const CACHE_NAME = 'mercado-nascimento-v2';
 const APP_SHELL = ['/', '/index.html', '/manifest.json', '/icon-192.svg', '/icon-512.svg'];
 
 self.addEventListener('install', event => {
