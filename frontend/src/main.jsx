@@ -5,6 +5,16 @@ import PWAInstallPrompt from './components/PWAInstallPrompt.jsx';
 import './styles/theme.css';
 
 if ('serviceWorker' in navigator) {
+  let wasControlled = Boolean(navigator.serviceWorker.controller);
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!wasControlled) {
+      wasControlled = true;
+      return;
+    }
+
+    window.location.reload();
+  });
+
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
 }
 
