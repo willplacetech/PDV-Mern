@@ -409,12 +409,9 @@ Obrigado! 🙏`
     const totalEmAberto = pedidosPendentes.reduce((soma, item) => soma + item.falta, 0);
     const detalhesPendencias = pedidosPendentes.map(({ pedido, falta }) => {
       const data = new Date(pedido.createdAt).toLocaleDateString('pt-BR');
-      const totalPago = (Number(pedido.total) || 0) - falta;
       return [
         `• Pedido #${pedido.numero} — ${data}`,
-        `  Total: R$ ${(Number(pedido.total) || 0).toFixed(2).replace('.', ',')}`,
-        `  Pago: R$ ${totalPago.toFixed(2).replace('.', ',')}`,
-        `  *Em aberto: R$ ${falta.toFixed(2).replace('.', ',')}*`,
+        `  *Valor pendente: R$ ${falta.toFixed(2).replace('.', ',')}*`,
       ].join('\n');
     }).join('\n\n');
 
